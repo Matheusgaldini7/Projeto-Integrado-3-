@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/localizacaoScreen.dart';
 import 'screens/AmbienteScreen.dart';
+import 'screens/CriacaoPersonagemScreen.dart';
 
 class TelaHome extends StatelessWidget {
   const TelaHome({super.key});
@@ -38,6 +39,11 @@ class TelaHome extends StatelessWidget {
                 Container(margin: const EdgeInsets.symmetric(vertical: 24), width: 48, height: 2, color: const Color(0xFFA78BFA)),
                 _MenuButton(
                   label: 'NOVO JOGO', icon: Icons.play_arrow_rounded, primary: true,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CriacaoPersonagemScreen())),
+                ),
+                const SizedBox(height: 10),
+                _MenuButton(
+                  label: 'CONTINUAR JORNADA', icon: Icons.map_rounded,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AmbienteScreen())),
                 ),
                 const SizedBox(height: 10),
@@ -48,7 +54,7 @@ class TelaHome extends StatelessWidget {
                 const SizedBox(height: 10),
                 _MenuButton(label: 'CONFIGURAÇÕES', icon: Icons.settings_rounded, onTap: () {}),
                 const SizedBox(height: 10),
-                _MenuButton(label: 'CRÉDITOS', icon: Icons.people_rounded, onTap: () {}),
+                _MenuButton(label: 'LOGOUT', icon: Icons.logout_rounded, onTap: () => Navigator.pushReplacementNamed(context, '/')),
                 const SizedBox(height: 28),
                 const Text('v0.1.0 — SPRINT 1',
                     style: TextStyle(fontFamily: 'monospace', fontSize: 9, letterSpacing: 3, color: Color(0xFF2E2458))),
