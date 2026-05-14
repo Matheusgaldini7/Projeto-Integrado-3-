@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'TelaHome.dart';
+import 'screens/LoginScreen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +26,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF1A1040),
       ),
-      home: const TelaHome(),
+      home: const LoginScreen(),
+      routes: {
+        '/home': (context) => const TelaHome(),
+      },
     );
   }
 }
