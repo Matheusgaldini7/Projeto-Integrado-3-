@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'CriacaoPersonagemScreen.dart';
+//import 'CriacaoPersonagemScreen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -60,8 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
           _carregando = false;
           _erro = 'Erro inesperado';
         });
-
-        print(e);
       }
   }
 
@@ -120,17 +118,56 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: _carregando ? () {} : _entrar,
                 ),
                 const SizedBox(height: 12),
-                _Btn(
-                  label: 'CRIAR NOVO PERSONAGEM',
-                  cor: const Color(0xFF120830),
-                  borda: const Color(0xFF3D2F6A),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CriacaoPersonagemScreen())),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Btn(
+                        label: 'Google', // Deixe vazio pois a imagem já tem o texto
+                        imagePath: 'assets/images/google_icon.png',
+                        cor: const Color(0xFF120830),
+                        borda: const Color(0xFF3D2F6A),
+                        onTap: () => print('Login Google'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _Btn(
+                        label: '', // Deixe vazio
+                        imagePath: 'assets/images/microsoft_icon.png',
+                        cor: const Color(0xFF120830),
+                        borda: const Color(0xFF3D2F6A),
+                        onTap: () => print('Login Microsoft'),
+                      ),
+                    ),
+                  ],
                 ),
-                
                 const SizedBox(height: 32),
                 const Text('v0.1.0 — SPRINT 1',
                     style: TextStyle(fontFamily: 'monospace', fontSize: 9, letterSpacing: 3, color: Color(0xFF2E2458))),
               ],
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(right: 10, bottom: 10),
+        child: TextButton(
+          onPressed: () {
+            print('Ir para cadastro');
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFFA78BFA),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            enableFeedback: false,
+          ),
+          child: const Text(
+            'CRIAR CONTA ➔',
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
             ),
           ),
         ),
@@ -184,7 +221,14 @@ class _Btn extends StatefulWidget {
   final Color cor;
   final Color? borda;
   final VoidCallback onTap;
-  const _Btn({required this.label, required this.cor, this.borda, required this.onTap});
+  final String? imagePath;
+  const _Btn({
+    required this.label,
+    required this.cor,
+    this.borda,
+    required this.onTap,
+    this.imagePath,
+  });
 
   @override
   State<_Btn> createState() => _BtnState();
@@ -203,16 +247,29 @@ class _BtnState extends State<_Btn> {
         scale: _pressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: Container(
-          width: double.infinity, height: 48,
+          width: double.infinity, 
+          height: 48,
           decoration: BoxDecoration(
             color: widget.cor,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: widget.borda ?? widget.cor, width: 2),
           ),
           child: Center(
-            child: Text(widget.label, style: const TextStyle(
-              fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1, color: Colors.white,
-            )),
+            child: widget.imagePath != null
+                ? Image.asset(
+                    widget.imagePath!, 
+                    height: 48, 
+                    fit: BoxFit.contain,
+                  )
+                : Text(
+                    widget.label, 
+                    style: const TextStyle(
+                      fontFamily: 'monospace', 
+                      fontSize: 11, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
       ),
