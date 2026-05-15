@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "894530379264",
+    "project_id": "journey-deegre",
+    "storage_bucket": "journey-deegre.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894530379264:android:7307bc00c3d54ed36d42e5",
+        "android_client_info": {
+          "package_name": "com.example.projeto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnDnNNZCa1-Gv3L7JK_0g-QJz_2bmDY_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

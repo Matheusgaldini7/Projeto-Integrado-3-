@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'CriacaoPersonagemScreen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -32,12 +34,35 @@ class _LoginScreenState extends State<LoginScreen> {
       _erro = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1200));
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _senhaController.text.trim(),
+      );
 
-    if (mounted) {
-      setState(() => _carregando = false);
-      Navigator.pushReplacementNamed(context, '/home');
-    }
+      if (mounted) {
+        setState(() => _carregando = false);
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _carregando = false;
+
+        if (e.code == 'invalid-credential') {
+          _erro = 'Email ou senha incorretos';
+        } else {
+          _erro = 'Erro ao fazer login';
+        }
+      });
+      
+    } catch (e) {
+        setState(() {
+          _carregando = false;
+          _erro = 'Erro inesperado';
+        });
+
+        print(e);
+      }
   }
 
   @override
@@ -70,8 +95,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 _Input(
                   controller: _emailController,
-                  label: 'USUÁRIO / EMAIL',
-                  icon: Icons.person_outline_rounded,
+                  label: 'EMAIL',
+                  icon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 12),
                 _Input(
