@@ -5,6 +5,32 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
+  // Cadastro
+  Future<UserCredential> cadastrarEmailSenha({
+    required String email,
+    required String senha,
+  }) async {
+    try {
+      return await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'weak-password') {
+        throw 'A senha deve conter pelo menos 6 caracteres';
+      }
+      if (e.code == 'email-already-in-use') {
+        throw 'Este e-mail já está cadastrado em outra conta';
+      }
+      if (e.code == 'invalid-email') {
+        throw 'O formato do e-mail digitado é inválido';
+      }
+      throw 'Erro ao criar conta no campus';
+    } catch (e) {
+      throw 'Ocorreu um erro inesperado no registro';
+    }
+  }
+
   // Login email/senha
   Future<UserCredential> loginEmailSenha({
     required String email,

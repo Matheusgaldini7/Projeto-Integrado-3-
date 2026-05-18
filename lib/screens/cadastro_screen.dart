@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class CadastroScreen extends StatefulWidget {
+  const CadastroScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<CadastroScreen> createState() => _CadastroScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CadastroScreenState extends State<CadastroScreen> {
   final _authService = AuthService();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _entrar() async {
+  void _cadastrar() async {
     if (_emailController.text.isEmpty || _senhaController.text.isEmpty) {
       setState(() => _erro = 'Preencha todos os campos');
       return;
@@ -34,66 +34,30 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.loginEmailSenha(
+      await _authService.cadastrarEmailSenha(
         email: _emailController.text.trim(),
         senha: _senhaController.text.trim(),
       );
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/home'); // Depois você pode mudar para a tela de criação de personagem
       }
-
     } catch (e) {
-
       setState(() {
         _erro = e.toString().replaceAll('Exception: ', '');
       });
-
     } finally {
-
       if (mounted) {
         setState(() {
           _carregando = false;
         });
       }
-
-    }
-  }
-
-  void _loginGoogle() async {
-    setState(() {
-      _carregando = true;
-      _erro = null;
-    });
-
-    try {
-      final user = await _authService.loginGoogle();
-
-      if (user != null && mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-
-    } catch (e) {
-
-      setState(() {
-        _erro = e.toString().replaceAll('Exception: ', '');
-      });
-
-    } finally {
-
-      if (mounted) {
-        setState(() {
-          _carregando = false;
-        });
-      }
-
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tecladoAberto =
-      MediaQuery.of(context).viewInsets.bottom > 0;
+    final tecladoAberto = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1040),
@@ -104,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('🎓', style: TextStyle(fontSize: 56)),
+                const Text('📝', style: TextStyle(fontSize: 56)),
                 const SizedBox(height: 10),
                 const Text('PUC CAMPINAS · RPG ACADÊMICO',
                     style: TextStyle(fontFamily: 'monospace', fontSize: 9, letterSpacing: 4, color: Color(0xFF7C6FAF))),
@@ -143,27 +107,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 24),
                 _Btn(
-                  label: _carregando ? 'AUTENTICANDO...' : 'ENTRAR NO CAMPUS',
+                  label: _carregando ? 'CRIANDO MATRÍCULA...' : 'Cadastrar',
                   cor: const Color(0xFF7C3AED),
                   borda: const Color(0xFF3D2F6A),
-                  onTap: _carregando ? () {} : _entrar,
-                ),
-                const SizedBox(height: 12),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 150,
-                      child: _Btn(
-                        label: '',
-                        imagePath: 'assets/images/google_icon.png',
-                        cor: const Color(0xFF120830),
-                        borda: const Color(0xFF3D2F6A),
-                        onTap: _carregando ? () {} : _loginGoogle,
-                      ),
-                    ),
-                  ],
+                  onTap: _carregando ? () {} : _cadastrar,
                 ),
                 const SizedBox(height: 32),
                 const Text('v0.1.0 — SPRINT 1',
@@ -174,40 +121,34 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
       bottomNavigationBar: tecladoAberto
-      ? null
-      : Padding(
-        padding: const EdgeInsets.only(
-          right: 10,
-          bottom: 30,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/cadastro');
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFA78BFA),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                enableFeedback: false,
-              ),
-              child: const Text(
-                'CRIAR CONTA ➔',
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: 10, bottom: 30),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF7C6FAF),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      enableFeedback: false,
+                    ),
+                    child: const Text(
+                      '➔ VOLTAR PARA O LOGIN',
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -239,9 +180,7 @@ class _Input extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
-                  keyboardType: label == 'EMAIL'
-                    ? TextInputType.emailAddress
-                    : TextInputType.text,
+                  keyboardType: label == 'EMAIL' ? TextInputType.emailAddress : TextInputType.text,
                   obscureText: obscure,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: Colors.white),
                   decoration: const InputDecoration(border: InputBorder.none, isDense: true),
@@ -260,14 +199,7 @@ class _Btn extends StatefulWidget {
   final Color cor;
   final Color? borda;
   final VoidCallback onTap;
-  final String? imagePath;
-  const _Btn({
-    required this.label,
-    required this.cor,
-    this.borda,
-    required this.onTap,
-    this.imagePath,
-  });
+  const _Btn({required this.label, required this.cor, this.borda, required this.onTap});
 
   @override
   State<_Btn> createState() => _BtnState();
@@ -287,7 +219,7 @@ class _BtnState extends State<_Btn> {
         scale: _pressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: Container(
-          width: double.infinity, 
+          width: double.infinity,
           height: 48,
           decoration: BoxDecoration(
             color: widget.cor,
@@ -295,21 +227,15 @@ class _BtnState extends State<_Btn> {
             border: Border.all(color: widget.borda ?? widget.cor, width: 2),
           ),
           child: Center(
-            child: widget.imagePath != null
-                ? Image.asset(
-                    widget.imagePath!, 
-                    height: 48, 
-                    fit: BoxFit.contain,
-                  )
-                : Text(
-                    widget.label, 
-                    style: const TextStyle(
-                      fontFamily: 'monospace', 
-                      fontSize: 11, 
-                      fontWeight: FontWeight.bold, 
-                      color: Colors.white,
-                    ),
-                  ),
+            child: Text(
+              widget.label,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
       ),
