@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-//import 'CriacaoPersonagemScreen.dart';
-
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +9,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _authService = AuthService();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
   bool _carregando = false;
@@ -35,36 +34,67 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await _authService.loginEmailSenha(
         email: _emailController.text.trim(),
-        password: _senhaController.text.trim(),
+        senha: _senhaController.text.trim(),
       );
 
       if (mounted) {
-        setState(() => _carregando = false);
         Navigator.pushReplacementNamed(context, '/home');
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _carregando = false;
 
-        if (e.code == 'invalid-credential') {
-          _erro = 'Email ou senha incorretos';
-        } else {
-          _erro = 'Erro ao fazer login';
-        }
-      });
-      
     } catch (e) {
+
+      setState(() {
+        _erro = e.toString().replaceAll('Exception: ', '');
+      });
+
+    } finally {
+
+      if (mounted) {
         setState(() {
           _carregando = false;
-          _erro = 'Erro inesperado';
         });
       }
+
+    }
+  }
+
+  void _loginGoogle() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
+
+    try {
+      final user = await _authService.loginGoogle();
+
+      if (user != null && mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+
+    } catch (e) {
+
+      setState(() {
+        _erro = e.toString().replaceAll('Exception: ', '');
+      });
+
+    } finally {
+
+      if (mounted) {
+        setState(() {
+          _carregando = false;
+        });
+      }
+
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final tecladoAberto =
+      MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1040),
       body: SafeArea(
@@ -123,17 +153,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     Expanded(
                       child: _Btn(
-                        label: 'Google', // Deixe vazio pois a imagem já tem o texto
+                        label: '',
                         imagePath: 'assets/images/google_icon.png',
                         cor: const Color(0xFF120830),
                         borda: const Color(0xFF3D2F6A),
-                        onTap: () => print('Login Google'),
+                        onTap: _carregando ? () {} : _loginGoogle,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _Btn(
-                        label: '', // Deixe vazio
+                        label: '',
                         imagePath: 'assets/images/microsoft_icon.png',
                         cor: const Color(0xFF120830),
                         borda: const Color(0xFF3D2F6A),
@@ -150,26 +180,39 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 10, bottom: 10),
-        child: TextButton(
-          onPressed: () {
-            print('Ir para cadastro');
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFFA78BFA),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            enableFeedback: false,
-          ),
-          child: const Text(
-            'CRIAR CONTA ➔',
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
+      bottomNavigationBar: tecladoAberto
+      ? null
+      : Padding(
+        padding: const EdgeInsets.only(
+          right: 10,
+          bottom: 30,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () {
+                print('Ir para cadastro');
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFA78BFA),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                enableFeedback: false,
+              ),
+              child: const Text(
+                'CRIAR CONTA ➔',
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -203,6 +246,9 @@ class _Input extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  keyboardType: label == 'EMAIL'
+                    ? TextInputType.emailAddress
+                    : TextInputType.text,
                   obscureText: obscure,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: Colors.white),
                   decoration: const InputDecoration(border: InputBorder.none, isDense: true),
@@ -241,8 +287,9 @@ class _BtnState extends State<_Btn> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
       child: AnimatedScale(
         scale: _pressed ? 0.98 : 1.0,
         duration: const Duration(milliseconds: 100),
