@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/jogador_model.dart';
+import '../services/jogador_service.dart';
 
 class CriacaoPersonagemScreen extends StatefulWidget {
   const CriacaoPersonagemScreen({super.key});
@@ -8,14 +10,17 @@ class CriacaoPersonagemScreen extends StatefulWidget {
 }
 
 class _CriacaoPersonagemScreenState extends State<CriacaoPersonagemScreen> {
+  final JogadorService _jogadorService =
+    JogadorService();
+
   final _nomeController = TextEditingController();
   String _genero = ''; // 'M' ou 'F'
   int _etapa = 0; // 0: Gênero, 1: Nome/Stats
 
-  void _proximo() {
+  void _proximo() async {
     if (_etapa == 0 && _genero.isEmpty) return;
     if (_etapa == 1 && _nomeController.text.isEmpty) return;
-    
+
     if (_etapa == 0) {
       setState(() => _etapa = 1);
     } else {
@@ -24,15 +29,44 @@ class _CriacaoPersonagemScreenState extends State<CriacaoPersonagemScreen> {
   }
 
   void _finalizar() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator(color: Color(0xFFA78BFA))),
-    );
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      Navigator.pop(context); // fecha loading
-      Navigator.pushReplacementNamed(context, '/home');
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFFA78BFA),
+          ),
+        ),
+      );
+
+      final jogador = Jogador(
+        genero: _genero,
+        nome: _nomeController.text.trim(),
+      );
+
+      await _jogadorService.criarJogador(jogador);
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      Navigator.pushReplacementNamed(
+        context,
+        '/home',
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Erro ao criar personagem: $e',
+          ),
+        ),
+      );
     }
   }
 

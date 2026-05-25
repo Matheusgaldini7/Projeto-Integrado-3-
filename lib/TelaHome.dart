@@ -2,9 +2,66 @@ import 'package:flutter/material.dart';
 import 'screens/localizacaoScreen.dart';
 import 'screens/AmbienteScreen.dart';
 import 'screens/CriacaoPersonagemScreen.dart';
+import 'services/jogador_service.dart';
 
-class TelaHome extends StatelessWidget {
+class TelaHome extends StatefulWidget {
   const TelaHome({super.key});
+
+  @override
+  State<TelaHome> createState() => _TelaHomeState();
+}
+
+class _TelaHomeState extends State<TelaHome> {
+  final JogadorService _jogadorService = JogadorService();
+
+  Future<void> _novoJogo() async {
+    final existe = await _jogadorService.jogadorExiste();
+
+    if (!mounted) return;
+
+    if (!existe) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CriacaoPersonagemScreen(),
+        ),
+      );
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Personagem existente'),
+          content: const Text(
+            'Você já possui um personagem salvo.\n\n'
+            'Criar um novo personagem apagará todo o progresso atual.\n\n'
+            'Deseja continuar?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continuar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar == true && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CriacaoPersonagemScreen(),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +96,7 @@ class TelaHome extends StatelessWidget {
                 Container(margin: const EdgeInsets.symmetric(vertical: 24), width: 48, height: 2, color: const Color(0xFFA78BFA)),
                 _MenuButton(
                   label: 'NOVO JOGO', icon: Icons.play_arrow_rounded, primary: true,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CriacaoPersonagemScreen())),
+                  onTap: _novoJogo,
                 ),
                 const SizedBox(height: 10),
                 _MenuButton(
