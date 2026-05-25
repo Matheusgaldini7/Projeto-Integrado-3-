@@ -1,8 +1,11 @@
 plugins {
     id("com.android.application")
+<<<<<<< HEAD
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
+=======
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -31,7 +34,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+<<<<<<< HEAD
         manifestPlaceholders += mapOf("appAuthRedirectScheme" to "com.example.projeto")
+=======
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
     }
 
     buildTypes {

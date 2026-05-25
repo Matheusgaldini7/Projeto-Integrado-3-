@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+<<<<<<< HEAD
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
@@ -10,6 +11,21 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+=======
+import 'TelaHome.dart';
+import 'screens/LoginScreen.dart';
+import 'services/ConfiguracoesService.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Color(0xFF1A1040),
+    ),
+  );
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
   runApp(const MyApp());
 }
 
@@ -18,6 +34,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return MaterialApp(
       title: 'Journey Degree',
       debugShowCheckedModeBanner: false,
@@ -30,6 +47,35 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF050816),
       ),
       home: const HomeScreen(),
+=======
+    final config = ConfiguracoesService();
+
+    return AnimatedBuilder(
+      animation: config,
+      builder: (context, _) => MaterialApp(
+        title: 'Journey Degree',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color(0xFF1A1040),
+        ),
+        home: const LoginScreen(),
+        routes: {'/home': (context) => const TelaHome()},
+        builder: (context, child) {
+          final escurecer = (1 - config.luminosidade) * 0.65;
+          return Stack(
+            children: [
+              if (child != null) child,
+              IgnorePointer(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  color: Colors.black.withOpacity(escurecer),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
     );
   }
 }

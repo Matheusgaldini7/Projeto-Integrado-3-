@@ -1,5 +1,9 @@
 name: projeto
+<<<<<<< HEAD
 description: "Journey Degree - RPG Acadêmico PUC-Campinas PI3"
+=======
+description: "Journey Degree - RPG academico PUC-Campinas PI3 Sprint 1"
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -11,9 +15,12 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   geolocator: ^13.0.1
+<<<<<<< HEAD
   firebase_core: ^4.9.0
   cloud_firestore: ^6.4.1
   firebase_auth: ^6.5.1
+=======
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
 
 dev_dependencies:
   flutter_test:
@@ -22,8 +29,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+<<<<<<< HEAD
   assets:
     - assets/battles/
     - assets/characters/
     - assets/backgrounds/
     - assets/images/
+=======
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a

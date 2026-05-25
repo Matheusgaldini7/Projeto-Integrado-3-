@@ -15,9 +15,30 @@ migration:
     - platform: root
       create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
       base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+<<<<<<< HEAD
     - platform: web
       create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
       base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+=======
+    - platform: android
+      create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+      base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+    - platform: ios
+      create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+      base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+    - platform: linux
+      create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+      base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+    - platform: macos
+      create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+      base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+    - platform: web
+      create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+      base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+    - platform: windows
+      create_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+      base_revision: db50e20168db8fee486b9abf32fc912de3bc5b6a
+>>>>>>> e197abd03abdd84f7f741a76be305dc0711c6d8a
 
   # User provided section
 
