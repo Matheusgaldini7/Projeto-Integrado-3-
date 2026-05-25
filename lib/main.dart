@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'TelaHome.dart';
 import 'screens/LoginScreen.dart';
+import 'services/ConfiguracoesService.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,16 +21,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Journey Degree',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF1A1040),
+    final config = ConfiguracoesService();
+
+    return AnimatedBuilder(
+      animation: config,
+      builder: (context, _) => MaterialApp(
+        title: 'Journey Degree',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color(0xFF1A1040),
+        ),
+        home: const LoginScreen(),
+        routes: {'/home': (context) => const TelaHome()},
+        builder: (context, child) {
+          final escurecer = (1 - config.luminosidade) * 0.65;
+          return Stack(
+            children: [
+              if (child != null) child,
+              IgnorePointer(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  color: Colors.black.withOpacity(escurecer),
+                ),
+              ),
+            ],
+          );
+        },
       ),
-      home: const LoginScreen(),
-      routes: {
-        '/home': (context) => const TelaHome(),
-      },
     );
   }
 }
