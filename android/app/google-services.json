@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "894530379264",
+    "project_id": "journey-deegre",
+    "storage_bucket": "journey-deegre.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:894530379264:android:7307bc00c3d54ed36d42e5",
+        "android_client_info": {
+          "package_name": "com.example.projeto"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "894530379264-63j11tmdh176vsdqihv0lsu1qo0siuj2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.projeto",
+            "certificate_hash": "12cebd00595db681cd3e263aa5cbe47970c059fe"
+          }
+        },
+        {
+          "client_id": "894530379264-5op4d2mcbalsr83je5paph8lto1r1p7j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnDnNNZCa1-Gv3L7JK_0g-QJz_2bmDY_A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "894530379264-5op4d2mcbalsr83je5paph8lto1r1p7j.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "894530379264-v6i00ljkicemgmko2lfrkst4jccudml0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.projeto"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
