@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
+import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
 import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
@@ -48,6 +49,7 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
     super.initState();
     _player = widget.player;
     _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+    AudioManager.playExplorationMusic();
   }
 
   void _set(VoidCallback fn) => setState(fn);
@@ -98,19 +100,25 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
         _currentQuestion++;
         if (_currentQuestion >= _questions.length) {
           if (_correctAnswers == _questions.length) {
-            _bossHp = 0; _mode = 'reward';
+            _bossHp = 0;
+            _mode = 'reward';
+            AudioManager.playExplorationMusic();
             _storyText = 'Você acertou tudo! O Derivador entrega o boletim sem lutar.';
           } else {
             _mode = 'battle';
+            AudioManager.playBattleMusic();
             _storyText = 'O Derivador: "A lógica falhou. Agora veremos sua resistência."';
           }
         }
       });
 
-  void _startBattle() => _set(() {
-        _mode = 'battle';
-        _storyText = '${_player.titulo} ${_player.nome}: "Prepare-se."\n\nAs fórmulas no quadro começam a brilhar.';
-      });
+  void _startBattle() {
+    AudioManager.playBattleMusic();
+    _set(() {
+      _mode = 'battle';
+      _storyText = '${_player.titulo} ${_player.nome}: "Prepare-se."\n\nAs fórmulas no quadro começam a brilhar.';
+    });
+  }
 
   void _attack() => _set(() {
         final r = _battle.atacarJogador();
@@ -120,6 +128,7 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
         _storyText = '${r.mensagem}${_puzzleBonus && r.tipo != TipoAtaque.miss ? " (bônus lógica!)" : ""}';
         if (_bossHp <= 0) {
           _mode = 'reward';
+          AudioManager.playExplorationMusic();
           _storyText += '\n\nO Derivador: "Sua solução foi... elegante."';
           return;
         }
@@ -127,7 +136,10 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
         final c = _battle.atacarChefe(_puzzleBonus ? (_bossAtaque * 0.6).round() : _bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}\nSua vida: ${_player.hp}/${_player.hpMax}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _usarItem(String nome) => _set(() {
@@ -138,7 +150,10 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
         final c = _battle.atacarChefe(_bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _receiveReward() {
@@ -157,12 +172,16 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
     PlayerStorage.salvar(_player);
   }
 
-  void _lose() => _set(() {
-        _player = _player.copyWith(hp: _player.hpMax);
-        _bossHp = _bossHpMax; _mode = 'intro';
-        _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
-        _storyText = 'Você foi derrotado.\n\nAbre os olhos na entrada da Politécnica.';
-      });
+  void _lose() {
+    AudioManager.playExplorationMusic();
+    _set(() {
+      _player = _player.copyWith(hp: _player.hpMax);
+      _bossHp = _bossHpMax;
+      _mode = 'intro';
+      _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+      _storyText = 'Você foi derrotado.\n\nAbre os olhos na entrada da Politécnica.';
+    });
+  }
 
   void _goNext() => Navigator.pushReplacement(context,
       MaterialPageRoute(builder: (_) => ContinueScreen(player: _player, destinoOverride: 'refeitorio')));

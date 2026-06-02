@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
+import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
 import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
@@ -56,6 +57,7 @@ class _H15ScreenState extends State<H15Screen> {
     super.initState();
     _player = widget.player;
     _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+    AudioManager.playExplorationMusic();
   }
 
   void _set(VoidCallback fn) => setState(fn);
@@ -100,13 +102,16 @@ class _H15ScreenState extends State<H15Screen> {
         }
       });
 
-  void _hide() => _set(() {
-        _storyText =
-            'Você tenta se esconder atrás de uma mesa.\n\n'
-            'Maligno: "Achou mesmo que poderia se esconder dentro da minha própria avaliação?\n\n'
-            'Agora será obrigado a enfrentá-lo."';
-        _mode = 'battle';
-      });
+  void _hide() {
+    AudioManager.playBattleMusic();
+    _set(() {
+      _storyText =
+          'Você tenta se esconder atrás de uma mesa.\n\n'
+          'Maligno: "Achou mesmo que poderia se esconder dentro da minha própria avaliação?\n\n'
+          'Agora será obrigado a enfrentá-lo."';
+      _mode = 'battle';
+    });
+  }
 
   void _follow() => _set(() {
         _storyText =
@@ -131,11 +136,13 @@ class _H15ScreenState extends State<H15Screen> {
           if (_correctAnswers == _questions.length) {
             _bossHp = 0;
             _mode = 'reward';
+            AudioManager.playExplorationMusic();
             _storyText =
                 'Você acertou todas as perguntas!\n\n'
                 'Maligno reconhece seu conhecimento e entrega o boletim sem lutar.';
           } else {
             _mode = 'battle';
+            AudioManager.playBattleMusic();
             _storyText =
                 'Você errou pelo menos uma pergunta.\n\n'
                 'Maligno: "Resposta insuficiente. Agora você será testado."';
@@ -143,12 +150,15 @@ class _H15ScreenState extends State<H15Screen> {
         }
       });
 
-  void _startBattle() => _set(() {
-        _mode = 'battle';
-        _storyText =
-            '${_player.titulo} ${_player.nome}: "Prepare-se."\n\n'
-            'Maligno: "Interessante... vamos ver se você aguenta até o final."';
-      });
+  void _startBattle() {
+    AudioManager.playBattleMusic();
+    _set(() {
+      _mode = 'battle';
+      _storyText =
+          '${_player.titulo} ${_player.nome}: "Prepare-se."\n\n'
+          'Maligno: "Interessante... vamos ver se você aguenta até o final."';
+    });
+  }
 
   void _attack() => _set(() {
         final r = _battle.atacarJogador();
@@ -156,6 +166,7 @@ class _H15ScreenState extends State<H15Screen> {
         _storyText = r.mensagem;
         if (_bossHp <= 0) {
           _mode = 'reward';
+          AudioManager.playExplorationMusic();
           _storyText += '\n\nMaligno: "Impressionante… você passou pela minha avaliação."';
           return;
         }
@@ -165,6 +176,7 @@ class _H15ScreenState extends State<H15Screen> {
         _storyText += '\n\n${c.mensagem}\nSua vida: ${_player.hp}/${_player.hpMax}';
         if (_player.hp <= 0) {
           _mode = 'lose';
+          AudioManager.playExplorationMusic();
           _storyText += '\n\nMaligno: "Insuficiente. Volte quando estiver preparado."';
         }
       });
@@ -177,7 +189,10 @@ class _H15ScreenState extends State<H15Screen> {
         final c = _battle.atacarChefe(_bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _receiveReward() {
@@ -201,14 +216,17 @@ class _H15ScreenState extends State<H15Screen> {
     PlayerStorage.salvar(_player);
   }
 
-  void _lose() => _set(() {
-        _player = _player.copyWith(hp: _player.hpMax);
-        _bossHp = _bossHpMax;
-        _mode = 'npcIntro';
-        _step = 0;
-        _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
-        _storyText = 'Você perdeu.\n\nVocê abre os olhos e se encontra novamente no H15.';
-      });
+  void _lose() {
+    AudioManager.playExplorationMusic();
+    _set(() {
+      _player = _player.copyWith(hp: _player.hpMax);
+      _bossHp = _bossHpMax;
+      _mode = 'npcIntro';
+      _step = 0;
+      _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+      _storyText = 'Você perdeu.\n\nVocê abre os olhos e se encontra novamente no H15.';
+    });
+  }
 
   void _goNext() => Navigator.pushReplacement(context,
       MaterialPageRoute(builder: (_) => ContinueScreen(player: _player, destinoOverride: 'refeitorio')));

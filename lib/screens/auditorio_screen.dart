@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
+import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
 import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
@@ -35,6 +36,7 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         '${_player.nome} chega ao Grande Auditório — Palco da Aprovação.\n\n'
         'O ambiente é vasto e escuro. O único ponto de luz é um holofote central focado no palco.\n\n'
         'As poltronas estão ocupadas por vultos sombrios de estudantes reprovados.';
+    AudioManager.playExplorationMusic();
   }
 
   void _set(VoidCallback fn) => setState(fn);
@@ -81,12 +83,15 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         _mode = 'beforeBattle';
       });
 
-  void _startBattle() => _set(() {
-        _mode = 'battle';
-        _storyText =
-            'Magnífico bate sua caneta gigante no chão.\n\n'
-            '"Se deseja sair deste pesadelo, prove que merece a aprovação final."';
-      });
+  void _startBattle() {
+    AudioManager.playBattleMusic();
+    _set(() {
+      _mode = 'battle';
+      _storyText =
+          'Magnífico bate sua caneta gigante no chão.\n\n'
+          '"Se deseja sair deste pesadelo, prove que merece a aprovação final."';
+    });
+  }
 
   void _attack() => _set(() {
         final r = _battle.atacarJogador();
@@ -96,6 +101,7 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         _storyText = '${r.mensagem}${_player.skills.contains('Clean Code') && r.tipo != TipoAtaque.miss ? " (+10 Clean Code!)" : ""}';
         if (_bossHp <= 0) {
           _mode = 'ending';
+          AudioManager.playExplorationMusic();
           _storyText = '${_player.nome} desfere o golpe final.\n\nMagnífico: "Impossível... o ciclo não deveria ser quebrado..."';
           return;
         }
@@ -103,7 +109,10 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         final c = _battle.atacarChefe(_bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}\nSua vida: ${_player.hp}/${_player.hpMax}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _useSkill() => _set(() {
@@ -117,6 +126,7 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         _storyText = '${_player.nome} usou $used! $dano de dano!';
         if (_bossHp <= 0) {
           _mode = 'ending';
+          AudioManager.playExplorationMusic();
           _storyText += '\n\nMagnífico: "Então... você realmente concluiu a jornada."';
           return;
         }
@@ -124,7 +134,10 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         final c = _battle.atacarChefe(_bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _usarItem(String nome) => _set(() {
@@ -135,7 +148,10 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         final c = _battle.atacarChefe(_bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _receiveFinalReward() {
@@ -158,12 +174,16 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
     PlayerStorage.salvar(_player);
   }
 
-  void _lose() => _set(() {
-        _player = _player.copyWith(hp: _player.hpMax);
-        _bossHp = _bossHpMax; _mode = 'intro';
-        _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
-        _storyText = 'REPROVADO. O ciclo continua.\n\nVocê acorda novamente na entrada do Auditório.';
-      });
+  void _lose() {
+    AudioManager.playExplorationMusic();
+    _set(() {
+      _player = _player.copyWith(hp: _player.hpMax);
+      _bossHp = _bossHpMax;
+      _mode = 'intro';
+      _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+      _storyText = 'REPROVADO. O ciclo continua.\n\nVocê acorda novamente na entrada do Auditório.';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

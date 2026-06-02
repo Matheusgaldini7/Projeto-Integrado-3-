@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
+import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
 import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
@@ -56,6 +57,7 @@ class _H06ScreenState extends State<H06Screen> {
         '${_player.nome} chega ao prédio H06.\n\n'
         'O local parece mais remoto e isolado. O ar é frio, pesado e cortante.\n\n'
         'Dentro do laboratório, várias telas exibem uma tela azul de logon.';
+    AudioManager.playExplorationMusic();
   }
 
   void _set(VoidCallback fn) => setState(fn);
@@ -111,19 +113,25 @@ class _H06ScreenState extends State<H06Screen> {
         _currentQuestion++;
         if (_currentQuestion >= _questions.length) {
           if (_correctAnswers == _questions.length) {
-            _bossHp = 0; _mode = 'reward';
+            _bossHp = 0;
+            _mode = 'reward';
+            AudioManager.playExplorationMusic();
             _storyText = 'Build: SUCCESS. O Compilador reconhece sua competência.';
           } else {
             _mode = 'battle';
+            AudioManager.playBattleMusic();
             _storyText = 'O Compilador: "Erro detectado. Batalha iniciada."';
           }
         }
       });
 
-  void _startBattle() => _set(() {
-        _mode = 'battle';
-        _storyText = '${_player.titulo} ${_player.nome}: "Não vou deixar você corromper meu progresso."';
-      });
+  void _startBattle() {
+    AudioManager.playBattleMusic();
+    _set(() {
+      _mode = 'battle';
+      _storyText = '${_player.titulo} ${_player.nome}: "Não vou deixar você corromper meu progresso."';
+    });
+  }
 
   void _attack() => _set(() {
         final r = _battle.atacarJogador();
@@ -131,6 +139,7 @@ class _H06ScreenState extends State<H06Screen> {
         _storyText = r.mensagem;
         if (_bossHp <= 0) {
           _mode = 'reward';
+          AudioManager.playExplorationMusic();
           _storyText += '\n\nO Compilador: "Build: SUCCESS. Você passou na revisão."';
           return;
         }
@@ -138,7 +147,10 @@ class _H06ScreenState extends State<H06Screen> {
         final c = _battle.atacarChefe(_commentsUnlocked ? (_bossAtaque * 0.75).round() : _bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}\nSua vida: ${_player.hp}/${_player.hpMax}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _usarItem(String nome) => _set(() {
@@ -149,7 +161,10 @@ class _H06ScreenState extends State<H06Screen> {
         final c = _battle.atacarChefe(_bossAtaque);
         _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
         _storyText += '\n\n${c.mensagem}';
-        if (_player.hp <= 0) _mode = 'lose';
+        if (_player.hp <= 0) {
+          _mode = 'lose';
+          AudioManager.playExplorationMusic();
+        }
       });
 
   void _receiveReward() {
@@ -169,12 +184,16 @@ class _H06ScreenState extends State<H06Screen> {
     PlayerStorage.salvar(_player);
   }
 
-  void _lose() => _set(() {
-        _player = _player.copyWith(hp: _player.hpMax);
-        _bossHp = _bossHpMax; _mode = 'intro';
-        _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
-        _storyText = 'ERRO FATAL: conhecimento insuficiente.\n\nVocê acorda na entrada do H06.';
-      });
+  void _lose() {
+    AudioManager.playExplorationMusic();
+    _set(() {
+      _player = _player.copyWith(hp: _player.hpMax);
+      _bossHp = _bossHpMax;
+      _mode = 'intro';
+      _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+      _storyText = 'ERRO FATAL: conhecimento insuficiente.\n\nVocê acorda na entrada do H06.';
+    });
+  }
 
   void _goNext() {
     PlayerStorage.salvar(_player);

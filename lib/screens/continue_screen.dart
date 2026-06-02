@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/player.dart';
+import '../services/audio_manager.dart';
 import '../services/location_service.dart';
 import '../widgets/mini_mapa.dart';
 import 'h15_screen.dart';
@@ -90,6 +91,7 @@ class _ContinueScreenState extends State<ContinueScreen> {
   void initState() {
     super.initState();
     _atualizarGps();
+    AudioManager.playExplorationMusic();
   }
 
   Future<void> _atualizarGps() async {
