@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
-import '../services/player_storage.dart';
+//import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
 import '../widgets/battle_actions.dart';
 import '../widgets/status_card.dart';
@@ -181,7 +181,7 @@ class _H06ScreenState extends State<H06Screen> {
           'Recompensa recebida!\n\n🎁 Item: IDE\n✨ Skill: Clean Code\n'
           '⚔️ Bônus ATK: +${_player.bonusAtaque}\n❤️ HP máximo agora: ${_player.hpMax}';
     });
-    PlayerStorage.salvar(_player);
+    //PlayerStorage.salvar(_player);
   }
 
   void _lose() {
@@ -196,7 +196,7 @@ class _H06ScreenState extends State<H06Screen> {
   }
 
   void _goNext() {
-    PlayerStorage.salvar(_player);
+    //PlayerStorage.salvar(_player);
     Navigator.pushReplacement(context,
         MaterialPageRoute(builder: (_) => ContinueScreen(player: _player)));
   }

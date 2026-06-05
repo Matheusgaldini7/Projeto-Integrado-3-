@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
-import '../services/player_storage.dart';
+//import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
 import '../widgets/battle_actions.dart';
 import '../widgets/status_card.dart';
@@ -169,7 +169,7 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
           'Recompensa recebida!\n\n🎁 Item: Calculadora\n✨ Skill: Raciocínio Lógico\n'
           '⚔️ Bônus ATK: +${_player.bonusAtaque}\n❤️ HP máximo agora: ${_player.hpMax}';
     });
-    PlayerStorage.salvar(_player);
+    //PlayerStorage.salvar(_player);
   }
 
   void _lose() {

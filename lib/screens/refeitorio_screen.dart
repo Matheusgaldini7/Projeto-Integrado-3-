@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
-import '../services/player_storage.dart';
+//import '../services/player_storage.dart';
 import '../widgets/mini_mapa.dart';
 import 'continue_screen.dart';
 
@@ -48,7 +48,7 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
 
   void _heal() => _set(() {
         _player = _player.copyWith(hp: _player.hpMax);
-        PlayerStorage.salvar(_player);
+        //PlayerStorage.salvar(_player);
         _storyText =
             '${_player.nome} recupera completamente sua vida.\n\n'
             'HP: ${_player.hp}/${_player.hpMax}\n\n'
@@ -61,7 +61,7 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
         _cafeComprado = true;
         final inv = List<String>.from(_player.inventario)..add('Café Energético');
         _player = _player.copyWith(inventario: inv, dinheiro: _player.dinheiro - 20);
-        PlayerStorage.salvar(_player);
+        //PlayerStorage.salvar(_player);
         _storyText = '${_player.nome} comprou um Café Energético.\nDinheiro restante: ${_player.dinheiro} créditos.';
       });
 
@@ -81,7 +81,7 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
           inv.add('Café Energético'); _cafeComprado = true;
         }
         _player = _player.copyWith(skills: sk, inventario: inv);
-        PlayerStorage.salvar(_player);
+        //PlayerStorage.salvar(_player);
         _storyText = 'Veterano: "Boa escolha."\n\nSkill: Gestão de Tempo\nItem: Café Energético';
         _mode = 'readyToLeave';
       });
@@ -92,7 +92,7 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
       });
 
   void _goNext() {
-    PlayerStorage.salvar(_player);
+    //PlayerStorage.salvar(_player);
     Navigator.pushReplacement(context, MaterialPageRoute(
       builder: (_) => ContinueScreen(player: _player),
     ));

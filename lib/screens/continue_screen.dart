@@ -128,11 +128,17 @@ class _ContinueScreenState extends State<ContinueScreen> {
     );
   }
 
-  bool get _dentroDoRaio {
-    final d = _distancia;
-    return d != null && d <= _ambiente.raioMetros;
-  }
+  // bool get _dentroDoRaio {
+  //   final d = _distancia;
+  //   return d != null && d <= _ambiente.raioMetros;
+  // }
 
+  // Para teste
+  bool get _dentroDoRaio {
+    return true; // Força o botão a habilitar e liberar a entrada
+  }
+  // Para teste
+  
   String _distanciaTexto(double? dist) {
     if (dist == null) return '--';
     if (dist < 1000) return '${dist.toInt()}m';
@@ -317,35 +323,44 @@ class _ContinueScreenState extends State<ContinueScreen> {
       );
 
   Widget _gpsStatus(double? dist) {
-    if (_carregando) {
-      return const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-          SizedBox(width: 10),
-          Text('Buscando GPS...', style: TextStyle(color: Color(0xFFCBD5E1))),
-        ],
-      );
-    }
-    if (_erro != null) {
-      return Text(
-        'GPS indisponível: $_erro',
-        textAlign: TextAlign.center,
-        style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
-      );
-    }
-    if (_dentroDoRaio) {
-      return const Text(
-        '✅ Local alcançado. Entrada liberada.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: Color(0xFF48D058), fontWeight: FontWeight.bold),
-      );
-    }
-    return Text(
-      '📍 Vá até o local. Distância: ${_distanciaTexto(dist)}',
+    // if (_carregando) {
+    //   return const Row(
+    //     mainAxisAlignment: MainAxisAlignment.center,
+    //     children: [
+    //       SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+    //       SizedBox(width: 10),
+    //       Text('Buscando GPS...', style: TextStyle(color: Color(0xFFCBD5E1))),
+    //     ],
+    //   );
+    // }
+
+    // if (_erro != null) {
+    //   return Text(
+    //     'GPS indisponível: $_erro',
+    //     textAlign: TextAlign.center,
+    //     style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
+    //   );
+    // }
+    // if (_dentroDoRaio) {
+    //   return const Text(
+    //     '✅ Local alcançado. Entrada liberada.',
+    //     textAlign: TextAlign.center,
+    //     style: TextStyle(color: Color(0xFF48D058), fontWeight: FontWeight.bold),
+    //   );
+    // }
+    // return Text(
+    //   '📍 Vá até o local. Distância: ${_distanciaTexto(dist)}',
+    //   textAlign: TextAlign.center,
+    //   style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+    // );
+    
+    // Para teste
+    return const Text(
+      '✅ Local alcançado. Entrada liberada.',
       textAlign: TextAlign.center,
-      style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+      style: TextStyle(color: Color(0xFF48D058), fontWeight: FontWeight.bold),
     );
+    // Para teste
   }
 }
 

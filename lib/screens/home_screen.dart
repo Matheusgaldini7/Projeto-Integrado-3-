@@ -2,25 +2,101 @@ import 'package:flutter/material.dart';
 import 'character_creation_screen.dart';
 import 'continue_screen.dart';
 import 'settings_screen.dart';
-import '../services/player_storage.dart';
+import '../services/jogador_service.dart';
+import '../services/auth_service.dart';
+import 'login_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  Future<void> _continuar(BuildContext context) async {
-    final player = await PlayerStorage.carregar();
-    if (!context.mounted) return;
-    if (player == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Nenhum jogo salvo. Crie um personagem primeiro.'),
-      ));
-      Navigator.push(context, MaterialPageRoute(
-          builder: (_) => const CharacterCreationScreen()));
-      return;
+class _HomeScreenState extends State<HomeScreen> {
+  final JogadorService _jogadorService = JogadorService();
+
+  final AuthService _authService = AuthService();
+
+  Future<void> _logout() async {
+    await _authService.logout();
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
+  }
+
+  Future<void> _iniciarJogo() async {
+
+    final existe = await _jogadorService.jogadorExiste();
+
+    if (!mounted) return;
+
+    if (existe) {
+      final jogador = await _jogadorService.carregarJogador();
+      
+      if (jogador == null) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ContinueScreen(
+            player: jogador,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+          const CharacterCreationScreen(),
+        ),
+      );
     }
-    Navigator.push(context, MaterialPageRoute(
-        builder: (_) => ContinueScreen(player: player)));
+  }
+
+  Future<void> _novoJogo() async {
+    final existe = await _jogadorService.jogadorExiste();
+
+    if (!mounted) return;
+
+    if (existe) {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Novo Jogo'),
+          content: const Text(
+            'Criar um novo personagem irá sobrescrever o progresso atual.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continuar'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmar != true) return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CharacterCreationScreen(),
+      ),
+    );
   }
 
   void _creditos(BuildContext context) {
@@ -86,21 +162,56 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 15, color: Color(0xFFCBD5E1),
                     fontStyle: FontStyle.italic)),
             const SizedBox(height: 36),
-            _btn(context, 'Novo Jogo', Icons.play_arrow, () =>
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => const CharacterCreationScreen()))),
-            _btn(context, 'Continuar', Icons.explore, () => _continuar(context)),
+            _btn(
+              context,
+              'Novo Jogo',
+              Icons.play_arrow,
+              _novoJogo,
+            ),
+            _btn(
+              context,
+              'Continuar',
+              Icons.explore,
+              _iniciarJogo,
+            ),
             _btn(context, 'Configurações', Icons.settings, () =>
                 Navigator.push(context, MaterialPageRoute(
                     builder: (_) => const SettingsScreen()))),
             _btn(context, 'Créditos', Icons.info_outline,
                 () => _creditos(context)),
             const Spacer(),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: Text('Campus I - PUC-Campinas',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
-            ),
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+
+                    InkWell(
+                      onTap: _logout,
+                      borderRadius: BorderRadius.circular(20),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.logout,
+                          size: 22,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ),
+                    const Text(
+                      'Campus I - PUC-Campinas',
+                      style: TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ]),
         ),
       ),

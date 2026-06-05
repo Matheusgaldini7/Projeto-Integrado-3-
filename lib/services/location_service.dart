@@ -27,15 +27,17 @@ const List<Ambiente> ambientesPUC = [
 class LocationService {
   static Future<Position> obterPosicao() async {
     final ativo = await Geolocator.isLocationServiceEnabled();
-    if (!ativo) throw Exception('GPS desativado. Ative o GPS do celular.');
-    LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.denied) throw Exception('Permissão negada.');
-    }
-    if (perm == LocationPermission.deniedForever) {
-      throw Exception('Permissão negada permanentemente.');
-    }
+    
+    // if (!ativo) throw Exception('GPS desativado. Ative o GPS do celular.');
+    // LocationPermission perm = await Geolocator.checkPermission();
+    // if (perm == LocationPermission.denied) {
+    //   perm = await Geolocator.requestPermission();
+    //   if (perm == LocationPermission.denied) throw Exception('Permissão negada.');
+    // }
+    // if (perm == LocationPermission.deniedForever) {
+    //   throw Exception('Permissão negada permanentemente.');
+    // }
+    
     return Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.bestForNavigation),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
-import '../services/player_storage.dart';
+import '../services/jogador_service.dart';
 import 'continue_screen.dart';
 
 class CharacterCreationScreen extends StatefulWidget {
@@ -12,6 +12,8 @@ class CharacterCreationScreen extends StatefulWidget {
 
 class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   final _nameCtrl = TextEditingController();
+  final JogadorService _jogadorService = JogadorService();
+
   String _genero = 'masculino';
 
   String get _texto => _genero == 'feminino'
@@ -25,11 +27,23 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
           content: Text('Digite o nome do personagem antes de continuar.')));
       return;
     }
-    final player = Player(nome: nome, genero: _genero);
-    await PlayerStorage.salvar(player);
+    final player = Player(
+      nome: nome,
+      genero: _genero,
+    );
+
+    await _jogadorService.salvarJogador(player);
+
     if (!mounted) return;
-    Navigator.pushReplacement(context,
-        MaterialPageRoute(builder: (_) => ContinueScreen(player: player)));
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ContinueScreen(
+          player: player,
+        ),
+      ),
+    );
   }
 
   @override

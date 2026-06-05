@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
-import '../services/player_storage.dart';
+//import '../services/player_storage.dart';
 import '../widgets/battle_background.dart';
 import '../widgets/battle_actions.dart';
 import '../widgets/status_card.dart';
@@ -171,7 +171,7 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
           '❤️ HP máximo final: ${_player.hpMax}\n\n'
           '"Seu esforço foi... notável. O diploma é seu." — Magnífico';
     });
-    PlayerStorage.salvar(_player);
+    //PlayerStorage.salvar(_player);
   }
 
   void _lose() {

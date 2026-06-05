@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 import 'services/audio_manager.dart';
+import 'screens/cadastro_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +33,12 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF050816),
       ),
-      home: const HomeScreen(),
+      home: const LoginScreen(),
+
+      routes: {
+        '/cadastro_screen': (context) => const CadastroScreen(),
+        '/home': (context) => const HomeScreen(),
+      },
     );
   }
 }
