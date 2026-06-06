@@ -19,7 +19,6 @@ class H06Screen extends StatefulWidget {
 class _H06ScreenState extends State<H06Screen> {
   late Player _player;
   late BattleHelper _battle;
-
   int _bossHp = 160;
   final int _bossHpMax = 160;
   final int _bossAtaque = 28;
@@ -212,10 +211,8 @@ class _H06ScreenState extends State<H06Screen> {
         centerTitle: true,
         backgroundColor: const Color(0xFF111827),
       ),
-      body: Stack(
-        clipBehavior: Clip.none,
-        children: [
-        Padding(
+      body: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(children: [
             StatusCard(player: _player, bossLabel: 'O Compilador',
@@ -230,59 +227,54 @@ class _H06ScreenState extends State<H06Screen> {
                 ),
               ),
             if (_mode == 'battle') const SizedBox(height: 8),
-            Flexible(
-              child: Card(
-                color: const Color(0xFF111827),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: const BorderSide(color: Color(0xFF64748B))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Expanded(child: SingleChildScrollView(
-                      child: Text(_storyText, textAlign: TextAlign.justify,
-                          style: const TextStyle(fontSize: 16, height: 1.5,
-                              color: Color(0xFFE5E7EB))),
-                    )),
-                    if (_mode != 'battle') ...[
-                      const SizedBox(height: 10),
-                      Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: SizedBox(
-                                height: 170,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    color: const Color(0xFF020617),
-                                    child: Image.asset(
-                                      'assets/backgrounds/h06.png',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                    ),
-                                  ),
+            Card(
+              color: const Color(0xFF111827),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: const BorderSide(color: Color(0xFF64748B))),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Text(_storyText, textAlign: TextAlign.justify,
+                      style: const TextStyle(fontSize: 16, height: 1.5,
+                          color: Color(0xFFE5E7EB))),
+                  if (_mode != 'battle') ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: SizedBox(
+                            height: 170,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                color: const Color(0xFF020617),
+                                child: Image.asset(
+                                  'assets/backgrounds/h06.png',
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: MiniMapa(ambienteAlvo: 'auditorio'),
-                            ),
-                          ],
+                          ),
                         ),
-                    ],
-                  ]),
-                ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          flex: 2,
+                          child: MiniMapa(ambienteAlvo: 'auditorio'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ]),
               ),
             ),
-            const SizedBox(height: 10),
             _buildActions(),
           ]),
         ),
-      ]),
+      ),
     );
   }
 

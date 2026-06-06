@@ -109,10 +109,8 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
         centerTitle: true,
         backgroundColor: const Color(0xFF111827),
       ),
-      body: Stack(
-        clipBehavior: Clip.none,
-        children: [
-        Padding(
+      body: SingleChildScrollView(
+        child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(children: [
             Card(
@@ -141,59 +139,52 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Flexible(
-              child: Card(
-                color: const Color(0xFF111827),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: const BorderSide(color: Color(0xFF64748B))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Expanded(child: SingleChildScrollView(
-                      child: Text(_storyText, textAlign: TextAlign.justify,
-                          style: const TextStyle(fontSize: 16,
-                              height: 1.5, color: Color(0xFFE5E7EB))),
-                    )),
-                    if (_mode != 'battle') ...[
-                      const SizedBox(height: 10),
-                      Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: SizedBox(
-                                height: 170,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    color: const Color(0xFF020617),
-                                    child: Image.asset(
-                                      'assets/backgrounds/refeitorio.png',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                                    ),
-                                  ),
-                                ),
+            Card(
+              color: const Color(0xFF111827),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: const BorderSide(color: Color(0xFF64748B))),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Text(_storyText, textAlign: TextAlign.justify,
+                      style: const TextStyle(fontSize: 16,
+                          height: 1.5, color: Color(0xFFE5E7EB))),
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: SizedBox(
+                          height: 170,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              color: const Color(0xFF020617),
+                              child: Image.asset(
+                                'assets/backgrounds/refeitorio.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: MiniMapa(ambienteAlvo: widget.voltouDeH15 ? 'politecnica' : 'h06'),
-                            ),
-                          ],
+                          ),
                         ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: MiniMapa(ambienteAlvo: widget.voltouDeH15 ? 'politecnica' : 'h06'),
+                      ),
                     ],
-                  ]),
-                ),
+                  ),
+                ]),
               ),
             ),
-            const SizedBox(height: 10),
             _buildActions(),
           ]),
         ),
-      ]),
+      ),
     );
   }
 

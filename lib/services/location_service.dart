@@ -18,12 +18,12 @@ class Ambiente {
 }
 
 const List<Ambiente> ambientesPUC = [
-  Ambiente(id: 'h15',         nome: 'Bloco H15',               latitude: -22.83399806779015, longitude: -47.052612488046826, raioMetros: 80),
-  Ambiente(id: 'politecnica', nome: 'Politécnica (H12)',        latitude: -22.833148454425693,  longitude: -47.05257979624784, raioMetros: 80),
-  Ambiente(id: 'refeitorio',  nome: 'Refeitório — Zona Segura', latitude: -22.832937462019515, longitude: -47.05214875081456, raioMetros: 80),
-  Ambiente(id: 'h06',         nome: 'Bloco H06',                latitude: -22.832146799292275, longitude: -47.05056913619648, raioMetros: 80),
+  Ambiente(id: 'h15',         nome: 'Bloco H15',               latitude: -22.83399806779015, longitude: -47.052612488046826, raioMetros: 30),
+  Ambiente(id: 'politecnica', nome: 'Politécnica (H12)',        latitude: -22.833164359794534,  longitude: -47.052603207311655, raioMetros: 30),
+  Ambiente(id: 'refeitorio',  nome: 'Refeitório — Zona Segura', latitude: -22.833005891182072, longitude: -47.05207005290407, raioMetros: 30),
+  Ambiente(id: 'h06',         nome: 'Bloco H06',                latitude: -22.832154118262498, longitude: -47.050648966226866, raioMetros: 30),
   Ambiente(id: 'auditorio',   nome: 'Auditório D. Gilberto',    latitude:  -22.83306155102536, longitude: -47.05312436713532, raioMetros: 40),
-];   
+]; 
 class LocationService {
   static Future<Position> obterPosicao() async {
     final ativo = await Geolocator.isLocationServiceEnabled();
@@ -41,6 +41,14 @@ class LocationService {
           accuracy: LocationAccuracy.bestForNavigation),
     );
   }
+
+  // Stream de posição contínua — atualiza a cada 5 metros caminhados.
+  static Stream<Position> posicaoStream() => Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 5,
+        ),
+      );
 
   static double distancia(double lat1, double lng1, double lat2, double lng2) {
     const R = 6371000.0;

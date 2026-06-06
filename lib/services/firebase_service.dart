@@ -4,6 +4,23 @@ import '../models/player.dart';
 class FirebaseService {
   static final _db = FirebaseFirestore.instance;
 
+  static Future<bool> verificarConexao() async {
+    try {
+      await _db
+          .collection('ranking')
+          .limit(1)
+          .get(const GetOptions(source: Source.server))
+          .timeout(const Duration(seconds: 5));
+      return true;
+    } on FirebaseException catch (e) {
+      // permission-denied significa que o servidor respondeu — Firebase está conectado.
+      if (e.code == 'permission-denied') return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> salvarUsuario(String uid, String nome, String genero) async {
     await _db.collection('usuarios').doc(uid).set({
       'nome': nome,

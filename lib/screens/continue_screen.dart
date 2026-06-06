@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/player.dart';
@@ -24,6 +25,7 @@ class _ContinueScreenState extends State<ContinueScreen> {
   Position? _pos;
   bool _carregando = true;
   String? _erro;
+  StreamSubscription<Position>? _locSub;
 
   _ObjetivoAtual get _objetivo {
     // Destino forçado (ex.: waypoint do Refeitório após H15 ou Politécnica)
@@ -90,22 +92,31 @@ class _ContinueScreenState extends State<ContinueScreen> {
   @override
   void initState() {
     super.initState();
-    _atualizarGps();
+    _iniciarStream();
     AudioManager.playExplorationMusic();
   }
 
-  Future<void> _atualizarGps() async {
-    setState(() {
-      _carregando = true;
-      _erro = null;
-    });
+  @override
+  void dispose() {
+    _locSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _iniciarStream() async {
+    setState(() { _carregando = true; _erro = null; });
     try {
       final pos = await LocationService.obterPosicao();
       if (!mounted) return;
-      setState(() {
-        _pos = pos;
-        _carregando = false;
-      });
+      setState(() { _pos = pos; _carregando = false; });
+      _locSub?.cancel();
+      _locSub = LocationService.posicaoStream().listen(
+        (p) { if (mounted) setState(() => _pos = p); },
+        onError: (e) {
+          if (!mounted) return;
+          setState(() => _erro = e.toString().replaceAll('Exception: ', ''));
+        },
+        cancelOnError: false,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -275,7 +286,7 @@ class _ContinueScreenState extends State<ContinueScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextButton.icon(
-                  onPressed: _atualizarGps,
+                  onPressed: _iniciarStream,
                   icon: const Icon(Icons.refresh),
                   label: const Text('Atualizar GPS'),
                 ),
