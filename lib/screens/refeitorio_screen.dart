@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
-//import '../services/player_storage.dart';
+import 'home_screen.dart';
 import '../widgets/mini_mapa.dart';
-import 'continue_screen.dart';
+import '../widgets/app_button.dart';
+import '../services/jogador_service.dart';
 
 class RefeitorioScreen extends StatefulWidget {
   final Player player;
@@ -13,6 +14,7 @@ class RefeitorioScreen extends StatefulWidget {
 }
 
 class _RefeitorioScreenState extends State<RefeitorioScreen> {
+  final _jogadorService = JogadorService();
   late Player _player;
   String _mode = 'intro';
   bool _cafeComprado = false;
@@ -24,16 +26,16 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
     super.initState();
     _player = widget.player;
     _storyText =
-        '${_player.nome} chega ao Refeitório da PUC-Campinas.\n\n'
+        '${_player.nickname} chega ao Refeitório da PUC-Campinas.\n\n'
         'O ambiente é movimentado. O cheiro de café e almoço domina o espaço.\n\n'
-        'Pela primeira vez desde o H15, ${_player.nome} sente que encontrou um lugar seguro.';
+        '${_player.nickname} sente que encontrou um lugar seguro.';
   }
 
   void _set(VoidCallback fn) => setState(fn);
 
   void _explore() => _set(() {
         _storyText =
-            '${_player.nome} observa melhor o Refeitório.\n\n'
+            '${_player.nickname} observa melhor o Refeitório.\n\n'
             'Ao fundo, Nutri prepara cafés atrás do balcão. '
             'Próximo a uma mesa, um Veterano mexe em uma mochila cheia de cabos e livros.';
         _mode = 'mainChoice';
@@ -41,71 +43,112 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
 
   void _talkNutri() => _set(() {
         _storyText =
-            'Nutri: "${_player.titulo} ${_player.nome}, você parece exausto. Aqui é uma Zona Segura.\n\n'
+            'Nutri: "${_player.titulo} ${_player.nickname}, você parece exausto. Aqui é uma Zona Segura.\n\n'
             'Posso restaurar seu HP gratuitamente ou vender um Café Energético por 20 créditos."';
         _mode = 'nutriChoice';
       });
 
-  void _heal() => _set(() {
-        _player = _player.copyWith(hp: _player.hpMax);
-        //PlayerStorage.salvar(_player);
+  Future<void> _heal() async {
+    
+    bool estavaMorto = _player.hp <= 0;
+
+    final playerAtualizado = _player.copyWith(hp: _player.hpMax);
+    await _jogadorService.salvarJogador(playerAtualizado);
+
+    if (estavaMorto) {
+      _set(() {
+      _player = playerAtualizado;
+      _storyText =
+          '${_player.nickname} recupera completamente sua vida.\n\n'
+          'HP: ${_player.hp}/${_player.hpMax}\n\n'
+          'Nutri: "Pronto. Agora tente não morrer de novo."';
+    });
+    } else {
+      _set(() {
+        _player = playerAtualizado;
         _storyText =
-            '${_player.nome} recupera completamente sua vida.\n\n'
+            '${_player.nickname} recupera completamente sua vida.\n\n'
             'HP: ${_player.hp}/${_player.hpMax}\n\n'
             'Nutri: "Pronto. Agora tente não desperdiçar isso."';
       });
-
-  void _buyCoffee() => _set(() {
-        if (_cafeComprado) { _storyText = 'Nutri: "Você já comprou um Café Energético aqui."'; return; }
-        if (_player.dinheiro < 20) { _storyText = 'Nutri: "Sem créditos, sem café."'; return; }
-        _cafeComprado = true;
-        final inv = List<String>.from(_player.inventario)..add('Café Energético');
-        _player = _player.copyWith(inventario: inv, dinheiro: _player.dinheiro - 20);
-        //PlayerStorage.salvar(_player);
-        _storyText = '${_player.nome} comprou um Café Energético.\nDinheiro restante: ${_player.dinheiro} créditos.';
-      });
+    }
+  }
+  Future<void> _buyCoffee() async {
+    if (_cafeComprado) { _set(() => _storyText = 'Nutri: "Você já comprou um Café Energético aqui."'); return; }
+    if (_player.dinheiro < 20) { _set(() => _storyText = 'Nutri: "Sem créditos, sem café."'); return; }
+    
+    final inv = List<String>.from(_player.inventario)..add('Café Energético');
+    final playerAtualizado = _player.copyWith(
+      inventario: inv, 
+      dinheiro: _player.dinheiro - 20
+    );
+    await _jogadorService.salvarJogador(playerAtualizado);
+    
+    _set(() {
+      _cafeComprado = true;
+      _player = playerAtualizado;
+      _storyText = '${_player.nickname} comprou um Café Energético.\nDinheiro restante: ${_player.dinheiro} créditos.';
+    });
+  }
 
   void _talkVeterano() => _set(() {
         _storyText =
-            'Veterano: "${_player.nome}, se você quer sobreviver ao campus, não basta estudar. '
+            'Veterano: "${_player.nickname}, se você quer sobreviver ao campus, não basta estudar. '
             'Tem que saber a hora certa de parar, recuperar energia e voltar mais forte."';
         _mode = 'veteranoChoice';
       });
 
-  void _prepare() => _set(() {
-        _preparoConcluido = true;
-        final sk = List<String>.from(_player.skills);
-        if (!sk.contains('Gestão de Tempo')) sk.add('Gestão de Tempo');
-        final inv = List<String>.from(_player.inventario);
-        if (!_cafeComprado && !inv.contains('Café Energético')) {
-          inv.add('Café Energético'); _cafeComprado = true;
-        }
-        _player = _player.copyWith(skills: sk, inventario: inv);
-        //PlayerStorage.salvar(_player);
-        _storyText = 'Veterano: "Boa escolha."\n\nSkill: Gestão de Tempo\nItem: Café Energético';
-        _mode = 'readyToLeave';
-      });
+  void _prepare() async {
+    _preparoConcluido = true;
+    final sk = List<String>.from(_player.skills);
+    if (!sk.contains('Gestão de Tempo')) sk.add('Gestão de Tempo');
+    final inv = List<String>.from(_player.inventario);
+    if (!_cafeComprado && !inv.contains('Café Energético')) {
+      inv.add('Café Energético'); _cafeComprado = true;
+    }
+    _player = _player.copyWith(skills: sk, inventario: inv);
+    await _jogadorService.salvarJogador(_player);
+    _set(() {
+      _storyText = 'Veterano: "Boa escolha."\n\nSkill: Gestão de Tempo\nItem: Café Energético';
+      _mode = 'readyToLeave';
+      _preparoConcluido = true;
+    });
+  }
 
   void _leaveWithout() => _set(() {
         _storyText = 'Veterano: "Coragem é útil. Teimosia também parece coragem até dar errado."';
         _mode = 'readyToLeave';
       });
 
-  void _goNext() {
-    //PlayerStorage.salvar(_player);
-    Navigator.pushReplacement(context, MaterialPageRoute(
-      builder: (_) => ContinueScreen(player: _player),
-    ));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F14),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Refeitório — Zona Segura',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: Icon(
+            (_mode == 'intro' || _mode == 'mainChoice') 
+                ? Icons.home 
+                : Icons.arrow_back,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            if (_mode == 'intro' || _mode == 'mainChoice') {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen()),
+                (route) => false,
+              );
+            } else {
+              if (_mode == 'readyToLeave') {
+                Navigator.pop(context);
+              } else {
+                _set(() => _mode = 'mainChoice');
+              }
+            }
+          },
+        ),
+        title: const Text('Refeitório — Zona Segura', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: const Color(0xFF111827),
       ),
@@ -124,7 +167,7 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(children: [
-                  Text('STATUS DE ${_player.nome.toUpperCase()}',
+                  Text('STATUS DE ${_player.nickname.toUpperCase()}',
                       style: const TextStyle(color: Color(0xFFF59E0B),
                           fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   const Divider(color: Color(0xFFF59E0B)),
@@ -171,7 +214,7 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
                                     child: Image.asset(
                                       'assets/backgrounds/refeitorio.png',
                                       fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
                                     ),
                                   ),
                                 ),
@@ -213,39 +256,38 @@ class _RefeitorioScreenState extends State<RefeitorioScreen> {
       ]);
 
   Widget _buildActions() {
-    if (_mode == 'intro') return _btn('Explorar Refeitório', Icons.restaurant, _explore);
-    if (_mode == 'mainChoice') return Column(children: [
-      _btn('Conversar com Nutri', Icons.local_cafe, _talkNutri),
-      _btn('Conversar com Veterano', Icons.backpack, _talkVeterano),
-    ]);
-    if (_mode == 'nutriChoice') return Column(children: [
-      _btn('Restaurar HP', Icons.healing, _heal),
-      _btn('Comprar Café Energético (20cr)', Icons.local_cafe, _buyCoffee),
-      _btn('Voltar', Icons.arrow_back, _explore),
-    ]);
-    if (_mode == 'veteranoChoice') return Column(children: [
-      _btn('Quero me preparar antes de seguir', Icons.access_time, _prepare),
-      _btn('Vou seguir sem perder tempo', Icons.directions_run, _leaveWithout),
-    ]);
-    if (_mode == 'readyToLeave') return Column(children: [
-      _btn(widget.voltouDeH15 ? 'Ir para a Politécnica' : 'Ir para o H06',
-          Icons.arrow_forward, _goNext),
-      _btn('Voltar ao Refeitório', Icons.restaurant, _explore),
-    ]);
-    return const SizedBox.shrink();
-  }
-
-  Widget _btn(String t, IconData i, VoidCallback fn) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: SizedBox(width: double.infinity, height: 46,
-          child: ElevatedButton.icon(
-            onPressed: fn, icon: Icon(i),
-            label: Text(t, style: const TextStyle(fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          ),
-        ),
-      );
+      if (_mode == 'intro') {
+        return AppButton(
+          label: 'Explorar Refeitório', 
+          icon: Icons.restaurant, 
+          onPressed: _explore
+        );
+      }
+      if (_mode == 'mainChoice') {
+        return Column(children: [
+          AppButton(label: 'Conversar com Nutri', icon: Icons.local_cafe, onPressed: _talkNutri),
+          AppButton(label: 'Conversar com Veterano', icon: Icons.backpack, onPressed: _talkVeterano),
+          AppButton(label: 'Voltar à exploração', icon: Icons.map, onPressed: () => Navigator.pop(context)),
+        ]);
+      }
+      if (_mode == 'nutriChoice') {
+        return Column(children: [
+          AppButton(label: 'Restaurar HP', icon: Icons.healing, onPressed: _heal),
+          AppButton(label: 'Comprar Café Energético (20cr)', icon: Icons.local_cafe, onPressed: _buyCoffee),
+        ]);
+      }
+      if (_mode == 'veteranoChoice') {
+        bool jaPossuiSkill = _player.skills.contains('Gestão de Tempo');
+        return Column(children: [
+          if (!_preparoConcluido && !jaPossuiSkill)
+            AppButton(label: 'Quero me preparar antes de seguir', icon: Icons.access_time, onPressed: _prepare),
+          
+          AppButton(label: 'Vou seguir sem perder tempo', icon: Icons.directions_run, onPressed: _leaveWithout),
+        ]);
+      }
+      if (_mode == 'readyToLeave') {
+      return AppButton(label: 'Voltar à exploração', icon: Icons.map, onPressed: () => Navigator.pop(context));
+    }
+      return const SizedBox.shrink();
+    }
 }

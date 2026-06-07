@@ -6,6 +6,7 @@ import 'screens/login_screen.dart';
 import 'services/audio_manager.dart';
 import 'screens/cadastro_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,11 +34,12 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF050816),
       ),
-      home: const LoginScreen(),
+      home: const SplashScreen(),
 
       routes: {
         '/cadastro_screen': (context) => const CadastroScreen(),
         '/home': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(),
       },
     );
   }

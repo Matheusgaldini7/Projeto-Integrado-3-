@@ -1,4 +1,9 @@
 import 'dart:math';
+import '../models/player.dart';
+import '../models/chefe.dart';
+import '../data/itens_repository.dart';
+import '../data/skills_repository.dart';
+import '../models/skill.dart';
 
 enum TipoAtaque { normal, critico, critEspecial, miss }
 
@@ -9,65 +14,43 @@ class AtaqueResult {
   const AtaqueResult({required this.dano, required this.tipo, required this.mensagem});
 }
 
-class ItemBatalha {
-  final String nome;
-  final String descricao;
-  final String emoji;
-  final int cooldownTurnos;
-  final bool cura;
-  final int curaValor;
-  final bool armaCritico;
-  final bool escudo;
-  final int escudoValor;
-
-  const ItemBatalha({
-    required this.nome,
-    required this.descricao,
-    required this.emoji,
-    this.cooldownTurnos = 4,
-    this.cura = false,
-    this.curaValor = 0,
-    this.armaCritico = false,
-    this.escudo = false,
-    this.escudoValor = 0,
-  });
-}
-
-const Map<String, ItemBatalha> catalogoItens = {
-  'Cura': ItemBatalha(
-    nome: 'Cura', descricao: '+30 HP', emoji: '💊',
-    cooldownTurnos: 4, cura: true, curaValor: 30,
-  ),
-  'Café Energético': ItemBatalha(
-    nome: 'Café Energético', descricao: '+30 HP + CRÍTICO ESPECIAL',
-    emoji: '☕', cooldownTurnos: 4, cura: true, curaValor: 30, armaCritico: true,
-  ),
-  'Caneta da Aprovação': ItemBatalha(
-    nome: 'Caneta da Aprovação', descricao: 'CRÍTICO ESPECIAL (35-50)',
-    emoji: '✏️', cooldownTurnos: 3, armaCritico: true,
-  ),
-  'Calculadora': ItemBatalha(
-    nome: 'Calculadora', descricao: 'Escudo absorve 20 de dano',
-    emoji: '🧮', cooldownTurnos: 4, escudo: true, escudoValor: 20,
-  ),
-  'IDE': ItemBatalha(
-    nome: 'IDE', descricao: '+20 HP + CRÍTICO ESPECIAL',
-    emoji: '💻', cooldownTurnos: 3, cura: true, curaValor: 20, armaCritico: true,
-  ),
-  'Diploma': ItemBatalha(
-    nome: 'Diploma', descricao: 'Cura HP total',
-    emoji: '🎓', cooldownTurnos: 6, cura: true, curaValor: 9999,
-  ),
-};
-
 class _ItemState {
   int turnoUltimoUso;
   _ItemState() : turnoUltimoUso = -999;
 }
 
+class ResultadoBatalha {
+  final int danoChefe;
+  final int danoPlayer;
+  final int hpPlayerFinal;
+  final String mensagemJogador;
+  final String mensagemChefe;
+
+  ResultadoBatalha({
+    required this.danoChefe,
+    required this.danoPlayer,
+    required this.hpPlayerFinal,
+    required this.mensagemJogador,
+    required this.mensagemChefe,
+  });
+}
+
+class ResultadoItem {
+  final int novoHp;
+  final String mensagem;
+  final bool estaMorto;
+
+  ResultadoItem({
+    required this.novoHp,
+    required this.mensagem,
+    required this.estaMorto,
+  });
+}
+
 class BattleHelper {
   final Random _rng = Random();
   final int bonusAtaque;
+  final List<String> skillsAtivas;
 
   int turno = 0;
   bool proximoAtaqueCriticoEspecial = false;
@@ -78,10 +61,22 @@ class BattleHelper {
 
   final Map<String, _ItemState> _itemStates = {};
 
-  BattleHelper({required this.bonusAtaque});
+  BattleHelper({required this.bonusAtaque, this.skillsAtivas = const []});
+
+  double _somarSkill(TipoEfeito tipo){
+    double total = 0;
+    for(final id in skillsAtivas){
+      final skill = SkillsRepository.getSkill(id);
+      if(skill == null) continue;
+      if(skill.tipo == tipo){
+        total += skill.valor;
+      }
+    }
+    return total;
+  }
 
   bool itemDisponivel(String nome) {
-    final item = catalogoItens[nome];
+    final item = ItensRepository.getItem(nome);
     if (item == null) return false;
     final state = _itemStates[nome];
     if (state == null) return true;
@@ -89,7 +84,7 @@ class BattleHelper {
   }
 
   int turnosParaItem(String nome) {
-    final item = catalogoItens[nome];
+    final item = ItensRepository.getItem(nome);
     if (item == null) return 0;
     final state = _itemStates[nome];
     if (state == null) return 0;
@@ -98,7 +93,7 @@ class BattleHelper {
   }
 
   (String mensagem, int cura) usarItem(String nome) {
-    final item = catalogoItens[nome];
+    final item = ItensRepository.getItem(nome);
     if (item == null) return ('Item desconhecido.', 0);
     _itemStates[nome] ??= _ItemState();
     _itemStates[nome]!.turnoUltimoUso = turno;
@@ -164,6 +159,18 @@ class BattleHelper {
     final critico = _ataquesC % 5 == 0;
     final base = ataqueBase - 4 + _rng.nextInt(9);
     int dano = critico ? (base * 1.5).round() : base;
+    final reducao =
+      _somarSkill(
+        TipoEfeito.reducaoDano
+      ).clamp(
+        0.0,
+        0.90,
+      );
+    if(reducao > 0){
+      dano = (
+          dano * (1 - reducao)
+      ).round();
+    }
     String sufixo = '';
     if (escudoAtivo > 0) {
       final absorvido = dano < escudoAtivo ? dano : escudoAtivo;
@@ -171,11 +178,71 @@ class BattleHelper {
       escudoAtivo -= absorvido;
       sufixo = ' (🧮 escudo absorveu $absorvido!)';
     }
+    final esquiva = _somarSkill(
+      TipoEfeito.esquiva
+    );
+    if(
+      esquiva > 0 &&
+      _rng.nextDouble() < esquiva
+    )
+    {
+      return const AtaqueResult(
+          dano:0,
+          tipo:TipoAtaque.miss,
+          mensagem:'Você desviou do ataque!'
+      );
+
+    }
     return AtaqueResult(dano: dano,
         tipo: critico ? TipoAtaque.critico : TipoAtaque.normal,
         mensagem: critico
             ? 'CRÍTICO do chefe! $dano de dano!$sufixo'
             : 'O chefe causou $dano de dano.$sufixo');
+  }
+
+  ResultadoItem processarTurnoComItem(String nomeItem, Player player, Chefe chefe) {
+    final (msgItem, cura) = usarItem(nomeItem);
+    
+    int hpPosCura = (player.hp + cura).clamp(0, player.hpMax);
+    
+    incrementarTurno();
+    final c = atacarChefe(chefe.ataque);
+    
+    int hpFinal = (hpPosCura - c.dano).clamp(0, player.hpMax);
+    
+    return ResultadoItem(
+      novoHp: hpFinal,
+      mensagem: "$msgItem\n\n${c.mensagem}",
+      estaMorto: hpFinal <= 0,
+    );
+}
+
+  ResultadoBatalha processarAtaque({
+    required Player player,
+    required Chefe chefe,
+    double multJogador = 1.0,
+    double multChefe = 1.0,
+  }) {
+
+    final r = atacarJogador();
+    int danoNoChefe = r.dano;
+
+    if (r.tipo != TipoAtaque.miss) {
+      danoNoChefe = (danoNoChefe * multJogador).round();
+    }
+
+    incrementarTurno();
+    final c = atacarChefe((chefe.ataque * multChefe).round());
+
+    int hpPlayerFinal = (player.hp - c.dano).clamp(0, player.hpMax);
+
+    return ResultadoBatalha(
+      danoChefe: danoNoChefe,
+      danoPlayer: c.dano,
+      hpPlayerFinal: hpPlayerFinal,
+      mensagemJogador: r.mensagem,
+      mensagemChefe: c.mensagem,
+    );
   }
 
   void incrementarTurno() => turno++;

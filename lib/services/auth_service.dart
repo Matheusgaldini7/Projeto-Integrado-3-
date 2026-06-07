@@ -23,8 +23,8 @@ class AuthService {
 
       await _jogadorService.criarJogadorSeNaoExistir(
         Player(
-          nome: email.split('@')[0],
-          genero: 'masculino',
+          nickname: '',
+          genero: '',
         ),
       );
 
@@ -68,11 +68,13 @@ class AuthService {
     try {
       await _googleSignIn.initialize();
 
-      final GoogleSignInAccount googleUser =
+      final GoogleSignInAccount? googleUser =
           await _googleSignIn.authenticate();
+          
+      if (googleUser == null) return null;
 
       final GoogleSignInAuthentication googleAuth =
-          googleUser.authentication;
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
@@ -80,14 +82,10 @@ class AuthService {
 
       final userCredential =
           await _auth.signInWithCredential(credential);
-
-      final nome =
-          userCredential.user?.displayName ?? 'Jogador';
-
       await _jogadorService.criarJogadorSeNaoExistir(
         Player(
-          nome: nome,
-          genero: 'masculino',
+          nickname: '',
+          genero: '',
         ),
       );
 

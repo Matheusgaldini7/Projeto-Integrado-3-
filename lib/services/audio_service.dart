@@ -31,8 +31,6 @@ class AudioService {
   ) async {
 
     _volumeEfeitos = volume;
-
-    // reservado para futuros efeitos sonoros
   }
 
   static double get volumeEfeitos =>

@@ -11,7 +11,8 @@ class CharacterCreationScreen extends StatefulWidget {
 }
 
 class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
-  final _nameCtrl = TextEditingController();
+
+  final _nickCtrl = TextEditingController();
   final JogadorService _jogadorService = JogadorService();
 
   String _genero = 'masculino';
@@ -21,14 +22,15 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
       : 'Você é um estudante da PUC-Campinas que, após a frustração de ter seu TCC recusado, acaba sendo transportado para uma versão alternativa e sombria da faculdade. Ele deve percorrer os blocos para enfrentar os desafios que representam sua jornada acadêmica.';
 
   Future<void> _iniciar() async {
-    final nome = _nameCtrl.text.trim();
-    if (nome.isEmpty) {
+    final nickname = _nickCtrl.text.trim();
+    if (nickname.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Digite o nome do personagem antes de continuar.')));
+          content: Text('Digite o nickname do personagem antes de continuar.')));
       return;
     }
+    
     final player = Player(
-      nome: nome,
+      nickname: nickname,
       genero: _genero,
     );
 
@@ -47,7 +49,7 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
   }
 
   @override
-  void dispose() { _nameCtrl.dispose(); super.dispose(); }
+  void dispose() { _nickCtrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -90,16 +92,16 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                    const Text('Nome do personagem',
+                    const Text('Nickname',
                         style: TextStyle(
                             color: Color(0xFF38BDF8),
                             fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: _nameCtrl,
+                      controller: _nickCtrl,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Digite o nome',
+                        hintText: 'Digite o nickname',
                         hintStyle:
                             const TextStyle(color: Color(0xFF94A3B8)),
                         filled: true,
@@ -128,7 +130,6 @@ class _CharacterCreationScreenState extends State<CharacterCreationScreen> {
                       _generoBtn('Feminino', Icons.female, 'feminino'),
                     ]),
                     const SizedBox(height: 16),
-                    // Fotos dos personagens
                     Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

@@ -3,32 +3,32 @@ class Chefe {
   final String assinatura;
   final String local;
   final int ordem;
-  final int vida;
+  final int hp;
   final int ataque;
   final String recompensaItem;
-  final String recompensaSkill;
+  final int recompensaXp;
 
   Chefe({
     required this.nome,
     required this.assinatura,
     required this.local,
     required this.ordem,
-    required this.vida,
+    required this.hp,
     required this.ataque,
     required this.recompensaItem,
-    required this.recompensaSkill,
+    required this.recompensaXp,
   });
 
   factory Chefe.fromMap(Map<String, dynamic> map) {
     return Chefe(
-      nome: map['nome'],
-      assinatura: map['assinatura'],
-      local: map['local'],
-      ordem: map['ordem'],
-      vida: map['vida'],
-      ataque: map['ataque'],
-      recompensaItem: map['recompensaItem'],
-      recompensaSkill: map['recompensaSkill'],
+      nome: map['nome'] ?? '',
+      assinatura: map['assinatura'] ?? '',
+      local: map['local'] ?? '',
+      ordem: map['ordem'] ?? 0,
+      hp: map['hp'] ?? 0,
+      ataque: map['ataque'] ?? 0,
+      recompensaItem: map['recompensaItem'] ?? '',
+      recompensaXp: map['recompensaXp'] ?? 0,
     );
   }
 
@@ -38,10 +38,10 @@ class Chefe {
       'assinatura': assinatura,
       'local': local,
       'ordem': ordem,
-      'vida': vida,
+      'hp': hp,
       'ataque': ataque,
       'recompensaItem': recompensaItem,
-      'recompensaSkill': recompensaSkill,
+      'recompensaXp': recompensaXp,
     };
   }
 }

@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/audio_manager.dart';
 import '../services/battle_helper.dart';
-//import '../services/player_storage.dart';
+import 'home_screen.dart';
 import '../widgets/battle_background.dart';
 import '../widgets/battle_actions.dart';
 import '../widgets/status_card.dart';
 import '../widgets/mini_mapa.dart';
 import 'continue_screen.dart';
+import '../data/perguntas_data.dart';
+import '../services/chefe_service.dart';
+import '../models/chefe.dart';
+import '../services/jogador_service.dart';
+import '../services/quiz_service.dart';
+import '../widgets/app_button.dart';
+import '../models/itens.dart';
+import '../data/itens_repository.dart';
 
 class PolitecnicaScreen extends StatefulWidget {
   final Player player;
@@ -19,36 +27,51 @@ class PolitecnicaScreen extends StatefulWidget {
 class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
   late Player _player;
   late BattleHelper _battle;
-
-  int _bossHp = 140;
-  final int _bossHpMax = 140;
-  final int _bossAtaque = 24;
+  final JogadorService _jogadorService = JogadorService();
+  final ChefeService _chefeService = ChefeService();
+  QuizService? _quiz;
+  Chefe? _chefe;
+  bool _isLoading = true;
+  static const String idChefe = 'derivador';
+  int _bossHp = 0;
   bool _puzzleBonus = false;
   bool _rewardReceived = false;
   String _mode = 'intro';
-  int _currentQuestion = 0;
-  int _correctAnswers = 0;
+  List<Pergunta> _perguntas = [];
 
   String _storyText =
       'Você chega à Politécnica.\n\n'
       'O ambiente é tomado por computadores, bancadas de engenharia e quadros cobertos por fórmulas matemáticas.\n\n'
       'O som constante das máquinas cria um clima futurista e desconfortável.';
 
-  final List<Map<String, dynamic>> _questions = [
-    {'question': 'Quanto é 2 + 3?', 'options': ['5', '6', '8'], 'answer': 0},
-    {'question': 'Qual operação representa uma multiplicação?', 'options': ['+', 'x', '-'], 'answer': 1},
-    {'question': 'Resultado de 10 dividido por 2?', 'options': ['2', '5', '10'], 'answer': 1},
-    {'question': 'Em lógica, verdadeiro é representado por:', 'options': ['0', '1', '-1'], 'answer': 1},
-    {'question': 'O que representa melhor o raciocínio lógico?',
-     'options': ['Resolver problemas seguindo etapas', 'Escolher respostas aleatórias', 'Ignorar os dados'],
-     'answer': 0},
-  ];
+  Future<void> _carregarDados() async {
+    final chefe = await _chefeService.carregarChefe(idChefe);
+    if (chefe == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    setState(() {
+      _chefe = chefe;
+      _bossHp = chefe.hp;
+      _perguntas = bancoDePerguntas[idChefe] ?? [];
+      _isLoading = false;
+
+      if (_player.assinaturas.contains(chefe.assinatura)) {
+        _mode = 'bossDefeated';
+        _storyText = 'Você retorna a Politécnica.\n\n'
+            '${_chefe!.nome}: "Você já provou seu valor, ${_player.titulo}. '
+            'Não há mais nada para avaliar aqui. Pode seguir em frente."';
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _player = widget.player;
-    _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
+
+    _battle = BattleHelper(bonusAtaque: _player.ataque, skillsAtivas: _player.skills);
+    _carregarDados();
     AudioManager.playExplorationMusic();
   }
 
@@ -63,7 +86,7 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
 
   void _tryPuzzle() => _set(() {
         _storyText =
-            '${_player.titulo} ${_player.nome}: "Quero tentar"\n\n'
+            '${_player.titulo} ${_player.nickname}: "Quero tentar"\n\n'
             'O terminal exibe:\n'
             '"Se uma máquina produz 4 peças por minuto, quantas peças ela produz em 5 minutos?"';
         _mode = 'puzzle';
@@ -90,238 +113,369 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
         _mode = 'choice';
       });
 
-  void _startQuiz() => _set(() {
-        _currentQuestion = 0; _correctAnswers = 0; _mode = 'quiz';
-        _storyText = '${_player.titulo} ${_player.nome}: "Vou ganhar de você em seu próprio jogo"\n\nAcerte todas para receber a Assinatura da Lógica.';
-      });
+  void _startQuiz() {
+    _quiz = QuizService(_perguntas);
+    setState(() {
+      _mode = 'quiz';
+      _storyText = '${_player.titulo} ${_player.nickname}: "Vou ganhar de você em seu próprio jogo"\n\nAcerte todas para receber a Assinatura da Lógica.';
+    });
+  }
 
-  void _answerQuestion(int i) => _set(() {
-        if (i == _questions[_currentQuestion]['answer']) _correctAnswers++;
-        _currentQuestion++;
-        if (_currentQuestion >= _questions.length) {
-          if (_correctAnswers == _questions.length) {
-            _bossHp = 0;
-            _mode = 'reward';
-            AudioManager.playExplorationMusic();
-            _storyText = 'Você acertou tudo! O Derivador entrega o boletim sem lutar.';
-          } else {
+  void _abrirItens() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111827),
+      builder: (_) {
+        final itens = _player.inventario
+            .map((nome) => ItensRepository.getItem(nome))
+            .where((item) => item != null)
+            .cast<ItemBatalha>()
+            .toList();
+
+        if (itens.isEmpty) {
+          return const SizedBox(
+            height: 120,
+            child: Center(
+              child: Text('Sem itens', style: TextStyle(color: Colors.white)),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          itemCount: itens.length,
+          itemBuilder: (_, index) {
+            final item = itens[index];
+            final idItem = item.nome;
+            final disponivel = _battle.itemDisponivel(idItem);
+            return ListTile(
+              leading: Text(item.emoji, style: const TextStyle(fontSize: 24)),
+              title: Text(item.nome, style: const TextStyle(color: Colors.white)),
+              subtitle: Text(
+                disponivel ? item.descricao : 'Cooldown: ${_battle.turnosParaItem(idItem)} turnos',
+                style: const TextStyle(color: Colors.grey),
+              ),
+              enabled: disponivel,
+              onTap: !disponivel ? null : () {
+                Navigator.pop(context);
+                _usarItem(idItem);
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _answerQuestion(int i) {
+    final acabou = _quiz!.responder(i);
+    
+    if (acabou) {
+      setState(() {
+        if (_quiz!.venceu) {
+          _bossHp = 0;
+          _mode = 'reward';
+          AudioManager.playExplorationMusic();
+          _storyText = 'Você acertou tudo! O Derivador entrega o boletim sem lutar.';
+        } else {
             _mode = 'battle';
             AudioManager.playBattleMusic();
             _storyText = 'O Derivador: "A lógica falhou. Agora veremos sua resistência."';
-          }
         }
       });
+    } else {
+      setState(() {}); 
+    }
+  }
 
   void _startBattle() {
     AudioManager.playBattleMusic();
     _set(() {
       _mode = 'battle';
-      _storyText = '${_player.titulo} ${_player.nome}: "Prepare-se."\n\nAs fórmulas no quadro começam a brilhar.';
+      _storyText = '${_player.titulo} ${_player.nickname}: "Prepare-se."\n\nAs fórmulas no quadro começam a brilhar.';
     });
   }
 
   void _attack() => _set(() {
-        final r = _battle.atacarJogador();
-        int dano = r.dano;
-        if (_puzzleBonus && r.tipo != TipoAtaque.miss) dano = (dano * 1.2).round();
-        _bossHp = (_bossHp - dano).clamp(0, _bossHpMax);
-        _storyText = '${r.mensagem}${_puzzleBonus && r.tipo != TipoAtaque.miss ? " (bônus lógica!)" : ""}';
-        if (_bossHp <= 0) {
-          _mode = 'reward';
-          AudioManager.playExplorationMusic();
-          _storyText += '\n\nO Derivador: "Sua solução foi... elegante."';
-          return;
-        }
-        _battle.incrementarTurno();
-        final c = _battle.atacarChefe(_puzzleBonus ? (_bossAtaque * 0.6).round() : _bossAtaque);
-        _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
-        _storyText += '\n\n${c.mensagem}\nSua vida: ${_player.hp}/${_player.hpMax}';
-        if (_player.hp <= 0) {
-          _mode = 'lose';
-          AudioManager.playExplorationMusic();
-        }
-      });
+    final res = _battle.processarAtaque(
+      player: _player, 
+      chefe: _chefe!,
+      multJogador: _puzzleBonus ? 1.2 : 1.0,
+      multChefe: _puzzleBonus ? 0.6 : 1.0,
+    );
 
-  void _usarItem(String nome) => _set(() {
-        final (msg, cura) = _battle.usarItem(nome);
-        _player = _player.copyWith(hp: (_player.hp + cura).clamp(0, _player.hpMax));
-        _storyText = '$msg\nSua vida: ${_player.hp}/${_player.hpMax}';
-        _battle.incrementarTurno();
-        final c = _battle.atacarChefe(_bossAtaque);
-        _player = _player.copyWith(hp: (_player.hp - c.dano).clamp(0, _player.hpMax));
-        _storyText += '\n\n${c.mensagem}';
-        if (_player.hp <= 0) {
-          _mode = 'lose';
-          AudioManager.playExplorationMusic();
-        }
-      });
+    _bossHp = (_bossHp - res.danoChefe).toInt().clamp(0, _chefe!.hp);
+    _player = _player.copyWith(hp: res.hpPlayerFinal.toInt());
+    _jogadorService.salvarJogador(_player);
+    _storyText = '${res.mensagemJogador}\n\n${res.mensagemChefe}\nSua vida: ${_player.hp}/${_player.hpMax}';
 
-  void _receiveReward() {
-    if (_rewardReceived) return;
-    final inv = List<String>.from(_player.inventario)..add('Calculadora');
-    final sk = List<String>.from(_player.skills)..add('Raciocínio Lógico');
-    final novasFases = _player.fasesVencidas + 1;
-    _player = _player.copyWith(
-      inventario: inv, skills: sk, fasesVencidas: novasFases, hp: _player.hpMax + 20);
-    _set(() {
-      _rewardReceived = true;
-      _storyText =
-          'Recompensa recebida!\n\n🎁 Item: Calculadora\n✨ Skill: Raciocínio Lógico\n'
-          '⚔️ Bônus ATK: +${_player.bonusAtaque}\n❤️ HP máximo agora: ${_player.hpMax}';
+    if (_bossHp <= 0) {
+      _mode = 'reward';
+      _storyText += '\n\nO Derivador: "Sua solução foi... elegante."';
+      AudioManager.playExplorationMusic();
+    } else if (_player.hp <= 0) {
+      _lose();
+    }
+  });
+
+  void _usarItem(String nome) async {
+    final resultado = _battle.processarTurnoComItem(nome, _player, _chefe!);
+
+    setState(() {
+      _player = _player.copyWith(hp: resultado.novoHp);
+      _storyText = '${resultado.mensagem}\nSua vida: ${_player.hp}/${_player.hpMax}';
+
+      if (resultado.estaMorto) {
+        _mode = 'lose';
+        AudioManager.playExplorationMusic();
+      }
     });
-    //PlayerStorage.salvar(_player);
+    await _jogadorService.salvarJogador(_player);
   }
 
+  Future<void> _receiveReward() async {
+    if (_rewardReceived) return;
+
+    final novasAssinaturas = List<String>.from(_player.assinaturas);
+
+    if (!novasAssinaturas.contains(_chefe!.assinatura)) {
+      novasAssinaturas.add(_chefe!.assinatura);
+    }
+
+    int xpBonus = _chefe!.recompensaXp;
+
+    if (_player.temSkill("gestao_tempo")) {
+      xpBonus += (_chefe!.recompensaXp * 0.20).round();
+    }
+
+    final playerAtualizado = _player.aplicarRecompensa(
+      _chefe!,
+      xpCustom: xpBonus,
+    ).copyWith(
+      assinaturas: novasAssinaturas,
+    );
+
+    setState(() {
+      _player = playerAtualizado;
+      _rewardReceived = true;
+
+      _storyText =
+          'Vitória! Recompensas recebidas!\n\n'
+          '🎁 Item: ${_chefe!.recompensaItem}\n'
+          '📈 XP Ganho: $xpBonus\n'
+          '✅ Assinatura: ${_chefe!.nome} obtida!';
+    });
+
+    await _jogadorService.salvarJogador(_player);
+  }
+  
   void _lose() {
     AudioManager.playExplorationMusic();
     _set(() {
-      _player = _player.copyWith(hp: _player.hpMax);
-      _bossHp = _bossHpMax;
-      _mode = 'intro';
-      _battle = BattleHelper(bonusAtaque: _player.bonusAtaque);
-      _storyText = 'Você foi derrotado.\n\nAbre os olhos na entrada da Politécnica.';
+      _player = _player.copyWith(hp: 0);
+      _bossHp = _chefe!.hp;
+      _mode = 'ghost';
+      _battle = BattleHelper(bonusAtaque: _player.ataque, skillsAtivas: _player.skills);
+      _storyText = 'ERRO FATAL: Seu HP chegou a 0.\n\n👻 VOCÊ ENTROU NO MODO FANTASMA!\n\nSeu código faliu miseravelmente. Você não consegue realizar nenhuma ação aqui. Vá até o Refeitório para se curar!';
     });
+    _jogadorService.salvarJogador(_player);
   }
 
   void _goNext() => Navigator.pushReplacement(context,
-      MaterialPageRoute(builder: (_) => ContinueScreen(player: _player, destinoOverride: 'refeitorio')));
+      MaterialPageRoute(builder: (_) => ContinueScreen(player: _player))
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F14),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Politécnica — Laboratório da Lógica',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        leading: _mode == 'battle' 
+            ? null 
+            : IconButton(
+                icon: const Icon(Icons.home, color: Colors.white),
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    (route) => false,
+                  );
+                },
+              ),
+        title: const Text('Politécnica', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: const Color(0xFF111827),
+        automaticallyImplyLeading: false,
       ),
-      body: Stack(
-        clipBehavior: Clip.none,
-        children: [
-        Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(children: [
-            StatusCard(player: _player, bossLabel: 'O Derivador',
-                bossHp: _bossHp, bossHpMax: _bossHpMax,
-                showBoss: _mode == 'battle', battle: _battle),
-            const SizedBox(height: 8),
-            if (_mode == 'battle')
-              SizedBox(
-                height: 240,
-                child: Center(
-                  child: BattleBackground(chefe: 'derivador', genero: _player.genero),
-                ),
-              ),
-            if (_mode == 'battle') const SizedBox(height: 8),
-            Flexible(
-              child: Card(
-                color: const Color(0xFF111827),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: const BorderSide(color: Color(0xFF64748B))),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Expanded(child: SingleChildScrollView(
-                      child: Text(_storyText, textAlign: TextAlign.justify,
-                          style: const TextStyle(fontSize: 16, height: 1.5,
-                              color: Color(0xFFE5E7EB))),
-                    )),
-                    if (_mode != 'battle') ...[
-                      const SizedBox(height: 10),
-                      Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: SizedBox(
-                                height: 170,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    color: const Color(0xFF020617),
-                                    child: Image.asset(
-                                      'assets/backgrounds/ct.png',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          :Stack(clipBehavior: Clip.none, children: [
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(children: [
+                StatusCard(player: _player, bossLabel: 'O Derivador',
+                    bossHp: _bossHp, bossHpMax: _chefe!.hp,
+                    showBoss: _mode == 'battle', battle: _battle),
+                const SizedBox(height: 8),
+                if (_mode == 'battle')
+                  SizedBox(
+                    height: 240,
+                    child: Center(
+                      child: BattleBackground(chefe: 'derivador', genero: _player.genero),
+                    ),
+                  ),
+                if (_mode == 'battle') const SizedBox(height: 8),
+                Flexible(
+                  child: Card(
+                    color: const Color(0xFF111827),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: const BorderSide(color: Color(0xFF64748B))),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Expanded(child: SingleChildScrollView(
+                          child: Text(_storyText, textAlign: TextAlign.justify,
+                              style: const TextStyle(fontSize: 16, height: 1.5,
+                                  color: Color(0xFFE5E7EB))),
+                        )),
+                        if (_mode != 'battle') ...[
+                          const SizedBox(height: 10),
+                          Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: SizedBox(
+                                    height: 170,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        color: const Color(0xFF020617),
+                                        child: Image.asset(
+                                          'assets/backgrounds/ct.png',
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: MiniMapa(ambienteAlvo: 'h06'),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: MiniMapa(ambienteAlvo: 'refeitorio'),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ]),
+                        ],
+                      ]),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 10),
+                _buildActions(),
+              ]),
             ),
-            const SizedBox(height: 10),
-            _buildActions(),
           ]),
-        ),
-      ]),
     );
   }
 
   Widget _buildActions() {
-    if (_mode == 'intro') return _btn('Explorar laboratório', Icons.precision_manufacturing, _talkEngineer);
-    if (_mode == 'engineerChoice') return Column(children: [
-      _btn('Quero tentar resolver', Icons.psychology, _tryPuzzle),
-      _btn('Prefiro lutar direto', Icons.sports_martial_arts, _fightDirectly),
-    ]);
-    if (_mode == 'puzzle') return Column(children: [
-      _btn('10 peças', Icons.arrow_right, () => _answerPuzzle(0)),
-      _btn('20 peças', Icons.arrow_right, () => _answerPuzzle(1)),
-      _btn('25 peças', Icons.arrow_right, () => _answerPuzzle(2)),
-    ]);
-    if (_mode == 'beforeBoss') return _btn('Enfrentar O Derivador', Icons.calculate, _meetBoss);
-    if (_mode == 'choice') return Column(children: [
-      _btn('Responder perguntas', Icons.quiz, _startQuiz),
-      _btn('Batalha por turnos', Icons.sports_martial_arts, _startBattle),
-    ]);
+    if (_mode == 'ghost') {
+      return AppButton(
+        label: 'Voltar ao Mapa (Ir ao Refeitório)',
+        icon: Icons.map,
+        onPressed: () => Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => ContinueScreen(player: _player)),
+          (route) => false,
+        ),
+      );
+    }
+    if (_mode == 'bossDefeated') {
+      return AppButton(
+        label: 'Ir para o próximo objetivo', 
+        icon: Icons.school, 
+        onPressed: () {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ContinueScreen(player: _player), 
+            ),
+            (route) => false,
+          );
+        }
+      );
+    }
+
+    if (_mode == 'intro') {
+      return AppButton(
+        label: 'Explorar laboratório', 
+        icon: Icons.precision_manufacturing, 
+        onPressed: _talkEngineer
+      );
+    }
+    if (_mode == 'engineerChoice') {
+      return Column(children: [
+        AppButton(label: 'Quero tentar resolver', icon: Icons.psychology, onPressed: _tryPuzzle),
+        AppButton(label: 'Prefiro lutar direto', icon: Icons.sports_martial_arts, onPressed: _fightDirectly),
+      ]);
+    }
+    if (_mode == 'puzzle') {
+      return Column(children: [
+        AppButton(label: '10 peças', icon: Icons.arrow_right, onPressed: () => _answerPuzzle(0)),
+        AppButton(label: '20 peças', icon: Icons.arrow_right, onPressed: () => _answerPuzzle(1)),
+        AppButton(label: '25 peças', icon: Icons.arrow_right, onPressed: () => _answerPuzzle(2)),
+      ]);
+    }
+    if (_mode == 'beforeBoss') {
+      return AppButton(label: 'Enfrentar O Derivador', icon: Icons.calculate, onPressed: _meetBoss);
+    }
+    if (_mode == 'choice') {
+      return Column(children: [
+        AppButton(label: 'Responder perguntas', icon: Icons.quiz, onPressed: _startQuiz),
+        AppButton(label: 'Batalha por turnos', icon: Icons.sports_martial_arts, onPressed: _startBattle),
+      ]);
+    }
     if (_mode == 'quiz') {
-      final q = _questions[_currentQuestion];
+      final q = _quiz!.perguntaAtual;
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(q['question'], textAlign: TextAlign.center,
+        Text(q.texto, textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 14, color: Color(0xFFE5E7EB),
                 fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
-        for (int i = 0; i < (q['options'] as List).length; i++)
-          _btn(q['options'][i], Icons.arrow_right, () => _answerQuestion(i)),
+        for (int i = 0; i < q.opcoes.length; i++) 
+          AppButton(
+            label: q.opcoes[i], 
+            icon: Icons.arrow_right, 
+            onPressed: () => _answerQuestion(i)
+          ),
       ]);
     }
-    if (_mode == 'battle') return BattleActions(
-      player: _player, battle: _battle,
-      onAtacar: _attack, onUsarItem: _usarItem,
-      onFugir: () => Navigator.pop(context),
-    );
-    if (_mode == 'reward') return Column(children: [
-      _btn(_rewardReceived ? 'Recompensa recebida ✓' : 'Receber recompensa',
-          Icons.card_giftcard, _rewardReceived ? () {} : _receiveReward),
-      if (_rewardReceived) _btn('Ir para o Refeitório', Icons.restaurant, _goNext),
-    ]);
-    if (_mode == 'lose') return _btn('Tentar novamente', Icons.restart_alt, _lose);
+    if (_mode == 'battle') {
+      return BattleActions(
+        player: _player, 
+        battle: _battle,
+        onAtacar: _attack, 
+        onUsarItem:(_)=>_abrirItens(),
+        onFugir: () => Navigator.pop(context),
+      );
+    }
+    if (_mode == 'reward') {
+      return Column(children: [
+        AppButton(
+          label: _rewardReceived ? 'Recompensa recebida ✓' : 'Receber recompensa',
+          icon: Icons.card_giftcard, 
+          onPressed: _rewardReceived ? () {} : _receiveReward
+        ),
+        if (_rewardReceived) 
+          AppButton(label: 'Ir para o próximo objetivo', icon: Icons.school, onPressed: _goNext),
+      ]);
+    }
+    if (_mode == 'lose') {
+      return AppButton(label: 'Tentar novamente', icon: Icons.restart_alt, onPressed: _lose);
+    }
     return const SizedBox.shrink();
   }
-
-  Widget _btn(String t, IconData i, VoidCallback fn) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: SizedBox(width: double.infinity, height: 46,
-          child: ElevatedButton.icon(
-            onPressed: fn, icon: Icon(i),
-            label: Text(t, style: const TextStyle(fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB), foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          ),
-        ),
-      );
 }

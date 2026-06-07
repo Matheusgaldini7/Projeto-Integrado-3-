@@ -131,13 +131,11 @@ class _MiniMapaState extends State<MiniMapa>
       width: 80, height: 80,
       child: AnimatedBuilder(
         animation: _ctrl,
-        builder: (_, __) => Stack(alignment: Alignment.center, children: [
-          // Radar background
+        builder: (_, _) => Stack(alignment: Alignment.center, children: [
           CustomPaint(
             size: const Size(64, 64),
             painter: _RadarPainter(dentroRaio: dentroRaio),
           ),
-          // Ponto destino
           if (!dentroRaio)
             Transform.translate(
               offset: Offset(math.sin(angulo) * 21, -math.cos(angulo) * 21),
@@ -152,7 +150,6 @@ class _MiniMapaState extends State<MiniMapa>
                 ),
               ),
             ),
-          // Seta
           if (!dentroRaio)
             Transform.rotate(
               angle: angulo,
@@ -162,7 +159,6 @@ class _MiniMapaState extends State<MiniMapa>
                     color: Color(0xFF38BDF8), size: 22),
               ),
             ),
-          // Ponto jogador
           Container(
             width: 7, height: 7,
             decoration: BoxDecoration(
@@ -177,7 +173,6 @@ class _MiniMapaState extends State<MiniMapa>
                   blurRadius: 6)],
             ),
           ),
-          // Badge chegou
           if (dentroRaio)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/player.dart';
@@ -12,7 +13,6 @@ import 'refeitorio_screen.dart';
 
 class ContinueScreen extends StatefulWidget {
   final Player player;
-  // Quando preenchido, ignora fasesVencidas e força o destino informado.
   final String? destinoOverride;
   const ContinueScreen({super.key, required this.player, this.destinoOverride});
 
@@ -25,8 +25,31 @@ class _ContinueScreenState extends State<ContinueScreen> {
   bool _carregando = true;
   String? _erro;
 
+  StreamSubscription<Position>? _positionStream;
+  bool _podeAbrirRefeitorio = true;
+
+  bool get _venceuH15 => widget.player.assinaturas.contains('maligno');
+  bool get _venceuPolitecnica => widget.player.assinaturas.contains('derivador');
+  bool get _venceuH06 => widget.player.assinaturas.contains('compilador');
+  bool get _venceuAuditorio => widget.player.inventario.contains('Diploma');
+
+  bool _podeAcessar(String id) {
+    if (id == 'refeitorio') return true;
+    if (widget.player.hp <= 0) return false;
+
+    final Map<String, String> requisitos = {
+      'politecnica': 'maligno',
+      'h06': 'derivador',
+      'auditorio': 'compilador',
+    };
+
+    if (!requisitos.containsKey(id)) return true;
+
+    return widget.player.assinaturas.contains(requisitos[id]);
+  }
+
   _ObjetivoAtual get _objetivo {
-    // Destino forçado (ex.: waypoint do Refeitório após H15 ou Politécnica)
+
     if (widget.destinoOverride == 'refeitorio') {
       return _ObjetivoAtual(
         nome: 'Refeitório',
@@ -35,13 +58,12 @@ class _ContinueScreenState extends State<ContinueScreen> {
         imagem: 'assets/backgrounds/refeitorio.png',
         destino: RefeitorioScreen(
           player: widget.player,
-          voltouDeH15: widget.player.fasesVencidas == 1,
+          voltouDeH15: _venceuH15,
         ),
       );
     }
 
-    final fases = widget.player.fasesVencidas;
-    if (fases <= 0) {
+    if (!_venceuH15) {
       return _ObjetivoAtual(
         nome: 'Bloco H15',
         chamada: 'Vá até o H15 para iniciar a primeira avaliação.',
@@ -50,7 +72,8 @@ class _ContinueScreenState extends State<ContinueScreen> {
         destino: H15Screen(player: widget.player),
       );
     }
-    if (fases == 1) {
+    
+    if (!_venceuPolitecnica) {
       return _ObjetivoAtual(
         nome: 'Politécnica',
         chamada: 'Vá até a Politécnica para enfrentar O Derivador.',
@@ -59,7 +82,8 @@ class _ContinueScreenState extends State<ContinueScreen> {
         destino: PolitecnicaScreen(player: widget.player),
       );
     }
-    if (fases == 2) {
+    
+    if (!_venceuH06) {
       return _ObjetivoAtual(
         nome: 'Bloco H06',
         chamada: 'Vá até o H06 para enfrentar O Compilador.',
@@ -68,7 +92,8 @@ class _ContinueScreenState extends State<ContinueScreen> {
         destino: H06Screen(player: widget.player),
       );
     }
-    if (fases == 3) {
+    
+    if (!_venceuAuditorio) {
       return _ObjetivoAtual(
         nome: 'Auditório',
         chamada: 'Vá até o Auditório para enfrentar a aprovação final.',
@@ -77,6 +102,7 @@ class _ContinueScreenState extends State<ContinueScreen> {
         destino: AuditorioScreen(player: widget.player),
       );
     }
+
     return _ObjetivoAtual(
       nome: 'Jornada concluída',
       chamada: 'Você já concluiu a jornada acadêmica.',
@@ -87,11 +113,60 @@ class _ContinueScreenState extends State<ContinueScreen> {
     );
   }
 
+  Widget _getScreenForId(String id) {
+    switch (id) {
+      case 'h15': return H15Screen(player: widget.player);
+      case 'politecnica': return PolitecnicaScreen(player: widget.player);
+      case 'h06': return H06Screen(player: widget.player);
+      case 'auditorio': return AuditorioScreen(player: widget.player);
+      case 'refeitorio': return RefeitorioScreen(player: widget.player);
+      default: return Container();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _iniciarMonitoramentoGeral();
     _atualizarGps();
     AudioManager.playExplorationMusic();
+  }
+
+  void _iniciarMonitoramentoGeral() {
+    _positionStream = LocationService.monitorarPosicao().listen((pos) {
+      for (var ambiente in ambientesPUC) {
+        if (LocationService.dentroDoRaio(pos, ambiente)) {
+          
+          if (_podeAbrirRefeitorio) {
+            
+            if (_podeAcessar(ambiente.id)) {
+              _abrirTela(ambiente.id);
+            } else {
+              debugPrint("Você ainda não é qualificado para ${ambiente.nome}");
+            }
+          }
+        }
+      }
+    });
+  }
+
+  void _abrirTela(String id) {
+    setState(() => _podeAbrirRefeitorio = false);
+    
+    Widget tela = _getScreenForId(id); 
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => tela),
+    ).then((_) {
+      setState(() => _podeAbrirRefeitorio = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    super.dispose();
   }
 
   Future<void> _atualizarGps() async {
@@ -115,6 +190,31 @@ class _ContinueScreenState extends State<ContinueScreen> {
     }
   }
 
+  void _testarTeletransporte() {
+    final a = _ambiente;
+    final posFake = Position(
+      latitude: a.latitude,
+      longitude: a.longitude,
+      timestamp: DateTime.now(),
+      accuracy: 0,
+      altitude: 0,
+      heading: 0,
+      speed: 0,
+      speedAccuracy: 0,
+      altitudeAccuracy: 0,
+      headingAccuracy: 0,
+    );
+
+    setState(() {
+      _pos = posFake;
+      _carregando = false;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Teletransportado para ${a.nome}!')),
+    );
+  }
+
   Ambiente get _ambiente => ambientesPUC.firstWhere((a) => a.id == _objetivo.id);
 
   double? get _distancia {
@@ -128,16 +228,10 @@ class _ContinueScreenState extends State<ContinueScreen> {
     );
   }
 
-  // bool get _dentroDoRaio {
-  //   final d = _distancia;
-  //   return d != null && d <= _ambiente.raioMetros;
-  // }
-
-  // Para teste
   bool get _dentroDoRaio {
-    return true; // Força o botão a habilitar e liberar a entrada
+    final d = _distancia;
+    return d != null && d <= _ambiente.raioMetros;
   }
-  // Para teste
   
   String _distanciaTexto(double? dist) {
     if (dist == null) return '--';
@@ -181,7 +275,59 @@ class _ContinueScreenState extends State<ContinueScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _statusPlayer(),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                  ),
+                  child: widget.player.hp <= 0
+                    ? const Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '👻 MODO FANTASMA ATIVO: Seu HP zerou! Vá imediatamente ao Refeitório para reviver.',
+                              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const Row(
+                        children: [
+                          Icon(Icons.lightbulb, color: Colors.amber, size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Dica: Vá ao refeitório para se curar e recuperar energia.',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RefeitorioScreen(player: widget.player)),
+                    );
+                  },
+                  icon: const Icon(Icons.restaurant, color: Color(0xFFF59E0B)),
+                  label: const Text('Ir para o Refeitório', style: TextStyle(color: Color(0xFFF59E0B))),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFF59E0B)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                
                 const SizedBox(height: 14),
+
                 Card(
                   color: const Color(0xFF111827).withOpacity(0.95),
                   shape: RoundedRectangleBorder(
@@ -203,6 +349,14 @@ class _ContinueScreenState extends State<ContinueScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        // Para teste
+                        TextButton.icon(
+                          onPressed: _testarTeletransporte,
+                          icon: const Icon(Icons.location_on, color: Colors.amber),
+                          label: const Text('TESTE: Teletransportar', style: TextStyle(color: Colors.amber)),
+                        ),
+                        const SizedBox(height: 8),
+                        // Para teste
                         Text(
                           objetivo.nome,
                           textAlign: TextAlign.center,
@@ -256,12 +410,14 @@ class _ContinueScreenState extends State<ContinueScreen> {
                         SizedBox(
                           height: 52,
                           child: ElevatedButton.icon(
-                            onPressed: _dentroDoRaio && !objetivo.finalizado ? _entrar : null,
-                            icon: Icon(_dentroDoRaio ? Icons.sports_martial_arts : Icons.lock),
+                            onPressed: _dentroDoRaio && !objetivo.finalizado && widget.player.hp > 0 ? _entrar : null,
+                            icon: Icon(widget.player.hp <= 0 ? Icons.lock : (_dentroDoRaio ? Icons.sports_martial_arts : Icons.lock)),
                             label: Text(
                               objetivo.finalizado
                                   ? 'Jornada concluída'
-                                  : _dentroDoRaio
+                                  : widget.player.hp <= 0
+                                    ? 'BLOQUEADO: Modo Fantasma Ativo'
+                                    : _dentroDoRaio
                                       ? 'Entrar em ${objetivo.nome}'
                                       : 'Fora da área — ${_distanciaTexto(dist)}',
                               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -293,74 +449,70 @@ class _ContinueScreenState extends State<ContinueScreen> {
     );
   }
 
-  Widget _statusPlayer() => Card(
-        color: const Color(0xFF1F2937),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFFF59E0B), width: 1.1),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Text(
-                widget.player.nome.toUpperCase(),
-                style: const TextStyle(
-                  color: Color(0xFFF59E0B),
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+  Widget _statusPlayer() {
+    final totalAssinaturas = widget.player.assinaturas.length;
+    
+    return Card(
+      color: const Color(0xFF1F2937),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFF59E0B), width: 1.1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text(
+              widget.player.nickname.toUpperCase(),
+              style: const TextStyle(
+                color: Color(0xFFF59E0B),
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Fases vencidas: ${widget.player.fasesVencidas}  ·  HP: ${widget.player.hp}/${widget.player.hpMax}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFFE5E7EB), fontSize: 13),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Progresso: $totalAssinaturas/3  ·  HP: ${widget.player.hp}/${widget.player.hpMax}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFFE5E7EB), fontSize: 13),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 
   Widget _gpsStatus(double? dist) {
-    // if (_carregando) {
-    //   return const Row(
-    //     mainAxisAlignment: MainAxisAlignment.center,
-    //     children: [
-    //       SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-    //       SizedBox(width: 10),
-    //       Text('Buscando GPS...', style: TextStyle(color: Color(0xFFCBD5E1))),
-    //     ],
-    //   );
-    // }
+    if (_carregando) {
+      return const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+          SizedBox(width: 10),
+          Text('Buscando GPS...', style: TextStyle(color: Color(0xFFCBD5E1))),
+        ],
+      );
+    }
 
-    // if (_erro != null) {
-    //   return Text(
-    //     'GPS indisponível: $_erro',
-    //     textAlign: TextAlign.center,
-    //     style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
-    //   );
-    // }
-    // if (_dentroDoRaio) {
-    //   return const Text(
-    //     '✅ Local alcançado. Entrada liberada.',
-    //     textAlign: TextAlign.center,
-    //     style: TextStyle(color: Color(0xFF48D058), fontWeight: FontWeight.bold),
-    //   );
-    // }
-    // return Text(
-    //   '📍 Vá até o local. Distância: ${_distanciaTexto(dist)}',
-    //   textAlign: TextAlign.center,
-    //   style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
-    // );
-    
-    // Para teste
-    return const Text(
-      '✅ Local alcançado. Entrada liberada.',
+    if (_erro != null) {
+      return Text(
+        'GPS indisponível: $_erro',
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
+      );
+    }
+    if (_dentroDoRaio) {
+      return const Text(
+        '✅ Local alcançado. Entrada liberada.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Color(0xFF48D058), fontWeight: FontWeight.bold),
+      );
+    }
+    return Text(
+      '📍 Vá até o local. Distância: ${_distanciaTexto(dist)}',
       textAlign: TextAlign.center,
-      style: TextStyle(color: Color(0xFF48D058), fontWeight: FontWeight.bold),
+      style: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
     );
-    // Para teste
   }
 }
 

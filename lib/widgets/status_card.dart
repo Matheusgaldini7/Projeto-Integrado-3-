@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/battle_helper.dart';
+import '../data/itens_repository.dart';
 
 class StatusCard extends StatelessWidget {
   final Player player;
@@ -8,7 +9,7 @@ class StatusCard extends StatelessWidget {
   final int bossHp;
   final int bossHpMax;
   final bool showBoss;
-  final BattleHelper battle;
+  final BattleHelper? battle;
 
   const StatusCard({
     super.key,
@@ -38,7 +39,7 @@ class StatusCard extends StatelessWidget {
                   letterSpacing: 1.5,
                   fontSize: 12)),
           const Divider(color: Color(0xFF38BDF8)),
-          _hpBar('❤️ ${player.nome}', player.hp, player.hpMax, Colors.redAccent),
+          _hpBar('❤️ ${player.nickname}', player.hp, player.hpMax, Colors.redAccent),
           if (showBoss) ...[
             const SizedBox(height: 8),
             _hpBar('👾 $bossLabel', bossHp, bossHpMax, Colors.purpleAccent),
@@ -47,9 +48,12 @@ class StatusCard extends StatelessWidget {
           Wrap(spacing: 8, runSpacing: 4, children: [
             Text('💰 ${player.dinheiro}cr',
                 style: const TextStyle(fontSize: 11)),
-            Text('⚔️ +${player.bonusAtaque}',
+            Text('⚔️ Atq: ${player.ataque}',
                 style: const TextStyle(
                     fontSize: 11, color: Color(0xFF38BDF8))),
+            Text('🌟 Nv: ${player.nivel} (${player.xp}/${player.xpParaProximoNivel}xp)',
+                style: const TextStyle(
+                    fontSize: 11, color: Color(0xFFFBBF24))),
             if (player.skills.isNotEmpty)
               Text('✨ ${player.skills.join(", ")}',
                   style: const TextStyle(
@@ -60,12 +64,13 @@ class StatusCard extends StatelessWidget {
             const Divider(color: Color(0xFF374151), height: 1),
             const SizedBox(height: 6),
             ...player.inventario
-                .where((i) => catalogoItens.containsKey(i))
+                .where((i) => ItensRepository.getItem(i) != null)
                 .toSet()
+                .toList()
                 .map((nome) {
-              final item = catalogoItens[nome]!;
-              final ok = battle.itemDisponivel(nome);
-              final faltam = battle.turnosParaItem(nome);
+              final item = ItensRepository.getItem(nome)!;
+              final ok = battle!.itemDisponivel(nome);
+              final faltam = battle!.turnosParaItem(nome);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 3),
                 child: Row(children: [
@@ -84,6 +89,7 @@ class StatusCard extends StatelessWidget {
                               horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
                               color: const Color(0xFF48D058)
+                                  // ignore: deprecated_member_use
                                   .withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
@@ -116,7 +122,7 @@ class StatusCard extends StatelessWidget {
       ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: LinearProgressIndicator(
-          value: (hp / max).clamp(0.0, 1.0),
+          value: (max > 0) ? (hp / max).clamp(0.0, 1.0) : 0.0,
           minHeight: 10,
           backgroundColor: const Color(0xFF374151),
           valueColor: AlwaysStoppedAnimation(color),

@@ -28,15 +28,15 @@ class LocationService {
   static Future<Position> obterPosicao() async {
     final ativo = await Geolocator.isLocationServiceEnabled();
     
-    // if (!ativo) throw Exception('GPS desativado. Ative o GPS do celular.');
-    // LocationPermission perm = await Geolocator.checkPermission();
-    // if (perm == LocationPermission.denied) {
-    //   perm = await Geolocator.requestPermission();
-    //   if (perm == LocationPermission.denied) throw Exception('Permissão negada.');
-    // }
-    // if (perm == LocationPermission.deniedForever) {
-    //   throw Exception('Permissão negada permanentemente.');
-    // }
+    if (!ativo) throw Exception('GPS desativado. Ative o GPS do celular.');
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied) throw Exception('Permissão negada.');
+    }
+    if (perm == LocationPermission.deniedForever) {
+      throw Exception('Permissão negada permanentemente.');
+    }
     
     return Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
@@ -63,5 +63,14 @@ class LocationService {
   static double distanciaAte(Position pos, String id) {
     final a = ambientesPUC.firstWhere((x) => x.id == id);
     return distancia(pos.latitude, pos.longitude, a.latitude, a.longitude);
+  }
+
+  static Stream<Position> monitorarPosicao() {
+    return Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 5,
+      ),
+    );
   }
 }

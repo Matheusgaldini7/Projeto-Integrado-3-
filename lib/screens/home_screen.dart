@@ -33,16 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _iniciarJogo() async {
-
-    final existe = await _jogadorService.jogadorExiste();
+    final jogador = await _jogadorService.carregarJogador();
 
     if (!mounted) return;
-
-    if (existe) {
-      final jogador = await _jogadorService.carregarJogador();
-      
-      if (jogador == null) return;
-      
+    if (jogador != null && jogador.nickname.trim().isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -55,19 +49,18 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-          const CharacterCreationScreen(),
+          builder: (_) => const CharacterCreationScreen(),
         ),
       );
     }
   }
 
   Future<void> _novoJogo() async {
-    final existe = await _jogadorService.jogadorExiste();
+    final jogador = await _jogadorService.carregarJogador();
 
     if (!mounted) return;
 
-    if (existe) {
+    if (jogador != null && jogador.nickname.trim().isNotEmpty) {
       final confirmar = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
