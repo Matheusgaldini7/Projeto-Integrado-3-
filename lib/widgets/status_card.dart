@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projeto/data/skills_repository.dart';
 import '../models/player.dart';
 import '../services/battle_helper.dart';
 import '../data/itens_repository.dart';
@@ -20,6 +21,8 @@ class StatusCard extends StatelessWidget {
     required this.showBoss,
     required this.battle,
   });
+  
+  get style => null;
 
   @override
   Widget build(BuildContext context) {
@@ -55,9 +58,10 @@ class StatusCard extends StatelessWidget {
                 style: const TextStyle(
                     fontSize: 11, color: Color(0xFFFBBF24))),
             if (player.skills.isNotEmpty)
-              Text('✨ ${player.skills.join(", ")}',
-                  style: const TextStyle(
-                      fontSize: 10, color: Color(0xFFA78BFA))),
+              Text(
+                  '✨ ${player.skills.map((id) => SkillsRepository.getSkill(id)?.nome ?? id).join(", ")}',
+                  style: const TextStyle(fontSize: 10, color: Color(0xFFA78BFA)),
+              )
           ]),
           if (showBoss && player.inventario.isNotEmpty) ...[
             const SizedBox(height: 6),

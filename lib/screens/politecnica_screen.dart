@@ -242,6 +242,13 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
       novasAssinaturas.add(_chefe!.assinatura);
     }
 
+    final novoInventario = List<String>.from(_player.inventario);
+    final novoItem = _chefe!.recompensaItem;
+    
+    if (!novoInventario.contains(novoItem)) {
+      novoInventario.add(novoItem);
+    }
+
     int xpBonus = _chefe!.recompensaXp;
 
     if (_player.temSkill("gestao_tempo")) {
@@ -253,6 +260,7 @@ class _PolitecnicaScreenState extends State<PolitecnicaScreen> {
       xpCustom: xpBonus,
     ).copyWith(
       assinaturas: novasAssinaturas,
+      inventario: novoInventario,
     );
 
     setState(() {

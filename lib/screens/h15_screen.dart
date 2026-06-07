@@ -46,7 +46,6 @@ class _H15ScreenState extends State<H15Screen> {
   Future<void> _carregarDados() async {
     final chefe = await _chefeService.carregarChefe(idChefe);
 
-    print("DEBUG: Chefe carregado: ${chefe?.nome}, Vida: ${chefe?.hp}");
     if (chefe == null) {
       setState(() => _isLoading = false);
       return;
@@ -71,10 +70,6 @@ class _H15ScreenState extends State<H15Screen> {
     super.initState();
     _player = widget.player;
     _battle = BattleHelper(bonusAtaque: _player.ataque, skillsAtivas: _player.skills);
-
-      print('DEBUG inventario ao iniciar: ${_player.inventario}');
-      print('DEBUG skills: ${_player.skills}');
-      print('DEBUG player: ${_player.nickname}');
 
 
     if (_player.hp <= 0) {
@@ -182,8 +177,6 @@ class _H15ScreenState extends State<H15Screen> {
   }
 
  void _abrirItens() {
-    print('DEBUG _abrirItens chamado!');
-    print('DEBUG inventario atual: ${_player.inventario}');
 
     showModalBottomSheet(
       context: context,
@@ -195,8 +188,6 @@ class _H15ScreenState extends State<H15Screen> {
             .where((item) => item != null)
             .cast<ItemBatalha>()
             .toList();
-      
-      print('DEBUG itens encontrados: ${itens.length}');
         
         if (itens.isEmpty) {
           return const SizedBox(
@@ -214,12 +205,9 @@ class _H15ScreenState extends State<H15Screen> {
           shrinkWrap: true,
           itemCount: itens.length,
           itemBuilder: (_, index) {
-            // 2. Agora 'item' já é o objeto completo (ItemBatalha)
+
             final item = itens[index]; 
-            
-            // Se o nome do item no inventário é a chave usada no BattleHelper,
-            // precisamos garantir que temos esse identificador.
-            // Se 'item.nome' for o ID que você usa no Firestore/Repository, use-o:
+         
             final idItem = item.nome; 
 
             final disponivel = _battle.itemDisponivel(idItem);
@@ -234,9 +222,7 @@ class _H15ScreenState extends State<H15Screen> {
                 style: const TextStyle(color: Colors.white),
               ),
               subtitle: Text(
-                disponivel
-                    ? item.descricao
-                    : 'Cooldown: ${_battle.turnosParaItem(idItem)} turnos',
+                disponivel ? item.descricao : 'Cooldown: ${_battle.turnosParaItem(idItem)} turnos',
                 style: const TextStyle(color: Colors.grey),
               ),
               enabled: disponivel,
@@ -244,7 +230,7 @@ class _H15ScreenState extends State<H15Screen> {
                   ? null
                   : () {
                       Navigator.pop(context);
-                      _usarItem(idItem); // Chama usando o ID
+                      _usarItem(idItem);
                     },
             );
           },
@@ -296,6 +282,13 @@ class _H15ScreenState extends State<H15Screen> {
       novasAssinaturas.add(_chefe!.assinatura);
     }
 
+    final novoInventario = List<String>.from(_player.inventario);
+    final novoItem = _chefe!.recompensaItem;
+    
+    if (!novoInventario.contains(novoItem)) {
+      novoInventario.add(novoItem);
+    }
+
     int xpBonus = _chefe!.recompensaXp;
 
     if (_player.temSkill("gestao_tempo")) {
@@ -309,6 +302,7 @@ class _H15ScreenState extends State<H15Screen> {
         )
         .copyWith(
           assinaturas: novasAssinaturas,
+          inventario: novoInventario,
         );
 
     setState(() {
@@ -347,8 +341,6 @@ class _H15ScreenState extends State<H15Screen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F14),
       appBar: AppBar(
-      // Se o modo for 'battle', o botão leading é nulo (oculto).
-      // Caso contrário, mostra o ícone de Home.
       leading: _mode == 'battle' 
           ? null 
           : IconButton(

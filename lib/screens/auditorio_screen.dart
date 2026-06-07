@@ -158,6 +158,13 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
 
   Future<void> _receiveFinalReward() async {
 
+    final novoInventario = List<String>.from(_player.inventario);
+    final novoItem = _chefe!.recompensaItem;
+    
+    if (!novoInventario.contains(novoItem)) {
+      novoInventario.add(novoItem);
+    }
+
     int xpBonus = _chefe!.recompensaXp;
     if(
       _player.temSkill(
@@ -170,21 +177,19 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
         bonusXP
       ).round();
     }
-    final playerAtualizado =
-        _player
-            .aplicarRecompensa(
-              _chefe!,
-              xpCustom:
-                  xpBonus,
-            );
+    final playerAtualizado = _player
+        .aplicarRecompensa(
+          _chefe!,
+          xpCustom: xpBonus,
+        )
+        .copyWith(
+          inventario: novoInventario,
+        );
 
     setState(() {
 
-      _player =
-          playerAtualizado;
-
-      _finalRewardReceived =
-          true;
+      _player = playerAtualizado;
+      _finalRewardReceived = true;
 
       _storyText =
           'Vitória! Recompensas recebidas!\n\n'
@@ -354,6 +359,13 @@ class _AuditorioScreenState extends State<AuditorioScreen> {
   }
 
   Widget _buildActions() {
+    if (_mode == 'intro') {
+      return AppButton(
+        label: 'Entrar no Auditório', 
+        icon: Icons.door_back_door, 
+        onPressed: _startCutscene
+      );
+    }
     if (_mode == 'ghost') {
       return AppButton(
         label: 'Voltar ao Mapa (Ir ao Refeitório)',

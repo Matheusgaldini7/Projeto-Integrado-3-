@@ -137,6 +137,7 @@ class _H06ScreenState extends State<H06Screen> {
   }
 
   void _abrirItens() {
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF111827),
@@ -217,9 +218,17 @@ class _H06ScreenState extends State<H06Screen> {
     if (_rewardReceived) return;
     final novasAssinaturas = List<String>.from(_player.assinaturas);
     if (!novasAssinaturas.contains(_chefe!.assinatura)) novasAssinaturas.add(_chefe!.assinatura);
+    
+    final novoInventario = List<String>.from(_player.inventario);
+    final novoItem = _chefe!.recompensaItem;
+    
+    if (!novoInventario.contains(novoItem)) {
+      novoInventario.add(novoItem);
+    }
+    
     int xpBonus = _chefe!.recompensaXp;
     if (_player.temSkill("gestao_tempo")) xpBonus += (_chefe!.recompensaXp * 0.20).round();
-    final playerAtualizado = _player.aplicarRecompensa(_chefe!, xpCustom: xpBonus).copyWith(assinaturas: novasAssinaturas);
+    final playerAtualizado = _player.aplicarRecompensa(_chefe!, xpCustom: xpBonus).copyWith(assinaturas: novasAssinaturas, inventario: novoInventario);
     setState(() {
       _player = playerAtualizado;
       _rewardReceived = true;

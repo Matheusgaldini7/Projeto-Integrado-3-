@@ -34,7 +34,7 @@ class Player {
     List<String>? inventario,
     List<String>? skills,
     List<String>? assinaturas,
-  })  : inventario = inventario ?? ['Cura'],
+  })  : inventario = inventario ?? ['cura'],
         skills = skills ?? [],
         assinaturas = assinaturas ?? [];
 
